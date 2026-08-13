@@ -17,7 +17,7 @@ Este proyecto (`SAPP-frontend-public/`) ahora implementa como pantalla inicial:
 
 - **UI**: React + TypeScript.
 - **Estado de sesión**: `AuthProvider` + `localStorage` (`SAPP_AUTH_SESSION`).
-- **HTTP**: wrapper `fetch` en `src/shared/http/httpClient.ts` con `VITE_API_BASE_URL`.
+- **HTTP**: wrapper `fetch` en `src/shared/http/httpClient.ts` con `VITE_API_URL`.
 - **Pantalla inicial**: `AspiranteLoginPage`.
 - **Pantalla autenticada**: `AspiranteLayout` + `AspiranteDocumentosPage`.
 
@@ -50,10 +50,24 @@ npm run build
 Crear `.env` o `.env.local` en `SAPP-frontend-public/`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_URL=http://localhost:8080/api/sapp
 ```
 
-El cliente concatena automáticamente `api` + path (ej. `/sapp/aspirante/consultaInfo`).
+Comportamiento por defecto sin variables:
+
+- Local (`npm run dev`): llama a `http://localhost:8080/api/sapp`.
+- Build dev/prod: llama a la ruta relativa del servidor `/api/sapp`.
+
+Para probar local usando la misma ruta relativa de dev/prod:
+
+```env
+VITE_API_URL=/api/sapp
+VITE_DEV_PROXY_TARGET=http://localhost:8080
+```
+
+El proxy de Vite reenvía `/api/sapp/*` al backend local. El cliente normaliza paths heredados como `/sapp/aspirante/consultaInfo` para evitar duplicar el prefijo.
+
+`VITE_API_BASE_URL` se mantiene como fallback de compatibilidad para `.env` antiguos.
 
 ## Seeds / datos iniciales
 
