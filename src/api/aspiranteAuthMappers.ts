@@ -1,6 +1,15 @@
 import type { AspiranteConsultaInfoDto } from './aspiranteConsultaTypes'
 import type { AuthSession } from '../context/Auth/types'
 
+const buildNombreCompleto = (dto: AspiranteConsultaInfoDto): string | undefined => {
+  const nombreCompleto = [dto.nombre1, dto.nombre2, dto.apellido1, dto.apellido2]
+    .map((parte) => parte?.trim())
+    .filter((parte): parte is string => Boolean(parte))
+    .join(' ')
+
+  return nombreCompleto || undefined
+}
+
 export const mapAspiranteInfoToSession = (dto: AspiranteConsultaInfoDto): AuthSession => {
   const numeroInscripcionUisStr = String(dto.numeroInscripcionUis)
 
@@ -17,7 +26,7 @@ export const mapAspiranteInfoToSession = (dto: AspiranteConsultaInfoDto): AuthSe
       fechaRegistro: dto.fechaRegistro ?? undefined,
       observaciones: dto.observaciones ?? null,
       inscripcionAdmisionId: dto.inscripcionAdmisionId ?? null,
-      nombre: dto.nombre ?? undefined,
+      nombre: buildNombreCompleto(dto),
       director: dto.director ?? undefined,
       grupoInvestigacion: dto.grupoInvestigacion ?? undefined,
       telefono: dto.telefono ?? undefined,
