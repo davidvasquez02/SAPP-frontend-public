@@ -27,6 +27,21 @@
     flex: 1;
 }
 
+.aspirante-layout__profile {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 2vw, 1.5rem);
+    min-width: 0;
+    flex: 1;
+}
+
+.aspirante-layout__uis-logo {
+    width: clamp(92px, 10vw, 132px);
+    height: auto;
+    flex: 0 0 auto;
+    object-fit: contain;
+}
+
 .aspirante-layout__eyebrow {
     margin: 0;
     font-weight: 700;
@@ -100,8 +115,20 @@
 }
 
 @media (max-width: 720px) {
+    .aspirante-layout {
+        margin-inline: 0;
+    }
+
     .aspirante-layout__header {
         flex-direction: column;
+    }
+
+    .aspirante-layout__profile {
+        align-items: flex-start;
+    }
+
+    .aspirante-layout__uis-logo {
+        width: 76px;
     }
     .aspirante-layout__logout {
         align-self: flex-start;
