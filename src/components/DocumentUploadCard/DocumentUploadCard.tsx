@@ -115,7 +115,9 @@ export const DocumentUploadCard = ({
       <div className="document-upload-card__status-row">
         <span className={statusClass}>{getStatusLabel(item)}</span>
         {fileName ? (
-          <span className="document-upload-card__filename">Archivo: {fileName}</span>
+          <span className="document-upload-card__filename" title={`Archivo: ${fileName}`}>
+            Archivo: {fileName}
+          </span>
         ) : (
           <span className="document-upload-card__filename document-upload-card__filename--empty">
             Sin archivo seleccionado

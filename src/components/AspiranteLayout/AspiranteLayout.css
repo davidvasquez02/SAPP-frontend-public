@@ -13,7 +13,7 @@
     align-items: flex-start;
     gap: 1rem;
     margin: clamp(2rem, 2.5vw, 2rem);
-    padding: clamp(1.2rem, 2.2vw, 1.8rem);
+    padding: clamp(1.1rem, 1.8vw, 1.5rem);
     border-radius: 1.5rem;
     background: var(--surface);
     border: 1px solid color-mix(in srgb, var(--outline), transparent 35%);
@@ -22,7 +22,9 @@
 
 .aspirante-layout__identity {
     display: grid;
-    gap: 0.9rem;
+    gap: 0.65rem;
+    min-width: 0;
+    flex: 1;
 }
 
 .aspirante-layout__eyebrow {
@@ -69,6 +71,8 @@
 .aspirante-layout__meta-value {
     margin: 0;
     color: var(--text-primary);
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .aspirante-layout__logout {
