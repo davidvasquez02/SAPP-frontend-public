@@ -6,30 +6,8 @@ const NO_TOKEN_VALUE = 'NO_TOKEN'
 
 let cachedSession: AuthSession | null = null
 
-const parseSession = (raw: string | null): AuthSession | null => {
-  if (!raw) {
-    return null
-  }
-
-  try {
-    return JSON.parse(raw) as AuthSession
-  } catch {
-    return null
-  }
-}
-
 export const getSession = (): AuthSession | null => {
-  if (cachedSession) {
-    return cachedSession
-  }
-
-  const storedSession =
-    parseSession(localStorage.getItem(STORAGE_KEY)) ??
-    parseSession(localStorage.getItem(LEGACY_STORAGE_KEY))
-
-  cachedSession = storedSession
-
-  return storedSession
+  return cachedSession
 }
 
 export function getToken(): string | null {
@@ -45,7 +23,8 @@ export function getToken(): string | null {
 
 export function saveSession(session: AuthSession): void {
   cachedSession = session
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(LEGACY_STORAGE_KEY)
 }
 
 export function clearSession(): void {

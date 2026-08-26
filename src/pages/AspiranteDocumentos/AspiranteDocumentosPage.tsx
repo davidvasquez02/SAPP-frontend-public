@@ -61,14 +61,37 @@ const areRequiredDocumentsComplete = (documentos: Pick<DocumentUploadItem, 'obli
   return obligatorios.every((documento) => documento.status === 'UPLOADED' || documento.status === 'APPROVED')
 }
 
+const normalizeOptionLabel = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('es')
+
+const optionMatchesLoginValue = (option: string, loginValue: string): boolean => {
+  const normalizedOption = normalizeOptionLabel(option)
+  const normalizedLoginValue = normalizeOptionLabel(loginValue)
+
+  return (
+    normalizedOption === normalizedLoginValue ||
+    normalizedOption.includes(normalizedLoginValue) ||
+    normalizedLoginValue.includes(normalizedOption)
+  )
+}
+
 const AspiranteDocumentosPage = () => {
   const { session } = useAuth()
+  const aspiranteUser = session?.kind === 'ASPIRANTE' ? (session.user as AspiranteUser) : null
+  const investigacionAsignada = Boolean(
+    aspiranteUser?.grupoInvestigacion?.trim() && aspiranteUser?.director?.trim(),
+  )
   const hasFetchedRef = useRef(false)
   const [items, setItems] = useState<DocumentUploadItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [grupoInvestigacionId, setGrupoInvestigacionId] = useState('')
   const [directorGrupoId, setDirectorGrupoId] = useState('')
-  const [infoInvestigacionAgregada, setInfoInvestigacionAgregada] = useState(false)
+  const [infoInvestigacionAgregada, setInfoInvestigacionAgregada] = useState(investigacionAsignada)
   const [gruposInvestigacion, setGruposInvestigacion] = useState<GrupoInvestigacionDto[]>([])
   const [directoresGrupo, setDirectoresGrupo] = useState<GrupoInvestigacionDocenteDto[]>([])
   const [isLoadingGrupos, setIsLoadingGrupos] = useState(false)
@@ -89,6 +112,14 @@ const AspiranteDocumentosPage = () => {
           return
         }
         setGruposInvestigacion(grupos)
+        const grupoAsignado = aspiranteUser?.grupoInvestigacion?.trim()
+        const grupo = grupoAsignado
+          ? grupos.find((item) => optionMatchesLoginValue(item.codigoNombre, grupoAsignado))
+          : undefined
+
+        if (grupo) {
+          setGrupoInvestigacionId(String(grupo.id))
+        }
       } catch (error) {
         if (!isMounted) {
           return
@@ -107,12 +138,10 @@ const AspiranteDocumentosPage = () => {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [aspiranteUser?.grupoInvestigacion])
 
   useEffect(() => {
     if (!grupoInvestigacionId) {
-      setDirectoresGrupo([])
-      setDirectorGrupoId('')
       return
     }
 
@@ -128,6 +157,14 @@ const AspiranteDocumentosPage = () => {
           return
         }
         setDirectoresGrupo(docentes)
+        const directorAsignado = aspiranteUser?.director?.trim()
+        const director = directorAsignado
+          ? docentes.find((item) => optionMatchesLoginValue(item.nombre, directorAsignado))
+          : undefined
+
+        if (director) {
+          setDirectorGrupoId(String(director.id))
+        }
       } catch (error) {
         if (!isMounted) {
           return
@@ -147,7 +184,7 @@ const AspiranteDocumentosPage = () => {
     return () => {
       isMounted = false
     }
-  }, [grupoInvestigacionId])
+  }, [aspiranteUser?.director, grupoInvestigacionId])
 
   useEffect(() => {
     if (!session || session.kind !== 'ASPIRANTE') {
@@ -424,10 +461,12 @@ const AspiranteDocumentosPage = () => {
               value={grupoInvestigacionId}
               onChange={(event) => {
                 setGrupoInvestigacionId(event.target.value)
+                setDirectorGrupoId('')
+                setDirectoresGrupo([])
                 setInfoInvestigacionAgregada(false)
                 setInvestigacionErrorMessage(null)
               }}
-              disabled={infoInvestigacionAgregada || isLoadingGrupos || isSavingInvestigacion}
+              disabled={investigacionAsignada || infoInvestigacionAgregada || isLoadingGrupos || isSavingInvestigacion}
             >
               <option value="">Seleccione un grupo</option>
               {isLoadingGrupos ? (
@@ -454,6 +493,7 @@ const AspiranteDocumentosPage = () => {
               }}
               disabled={
                 infoInvestigacionAgregada ||
+                investigacionAsignada ||
                 !grupoInvestigacionId ||
                 isLoadingDocentes ||
                 isSavingInvestigacion
@@ -484,7 +524,12 @@ const AspiranteDocumentosPage = () => {
             onClick={() => {
               void handleAgregarInformacionInvestigacion()
             }}
-            disabled={infoInvestigacionAgregada || !investigacionListaParaAgregar || isSavingInvestigacion}
+            disabled={
+              investigacionAsignada ||
+              infoInvestigacionAgregada ||
+              !investigacionListaParaAgregar ||
+              isSavingInvestigacion
+            }
           >
             {infoInvestigacionAgregada
               ? 'Información agregada'
