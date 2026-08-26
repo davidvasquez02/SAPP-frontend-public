@@ -4,10 +4,14 @@ import { mapAspiranteInfoToSession } from '../../api/aspiranteAuthMappers'
 import { clearSession, getSession, saveSession } from '../../modules/auth/session/sessionStore'
 import type { AspiranteLoginParams, AuthContextValue, AuthSession } from './types'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [session, setSessionState] = useState<AuthSession | null>(() => getSession())
+  const [session, setSessionState] = useState<AuthSession | null>(() => {
+    clearSession()
+    return getSession()
+  })
 
   const loginAspirante = useCallback(async (params: AspiranteLoginParams) => {
     const info = await consultaInfoAspirante(params)
