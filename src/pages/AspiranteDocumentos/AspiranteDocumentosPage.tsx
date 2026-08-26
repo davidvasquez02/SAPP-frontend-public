@@ -378,9 +378,10 @@ const AspiranteDocumentosPage = () => {
         <div>
           <h1 className="aspirante-documentos__title">Carga de documentos del aspirante</h1>
           <p className="aspirante-documentos__summary">
-            Obligatorios cargados: {obligatoriosCargados} / {obligatoriosTotales}
+            <strong>{obligatoriosCargados} de {obligatoriosTotales}</strong> obligatorios cargados
+            <span aria-hidden="true"> · </span>
+            {items.length} {items.length === 1 ? 'requisito' : 'requisitos'} en total
           </p>
-          <p className="aspirante-documentos__summary">Total requisitos: {items.length}</p>
         </div>
         <div className="aspirante-documentos__progress">
           <div
@@ -392,9 +393,9 @@ const AspiranteDocumentosPage = () => {
 
       <div className="aspirante-documentos__list">
         {errorMessage ? (
-          <p className="aspirante-documentos__error">{errorMessage}</p>
+          <p className="aspirante-documentos__error aspirante-documentos__list-message">{errorMessage}</p>
         ) : items.length === 0 ? (
-          <p className="aspirante-documentos__empty">No hay requisitos disponibles.</p>
+          <p className="aspirante-documentos__empty aspirante-documentos__list-message">No hay requisitos disponibles.</p>
         ) : (
           items.map((item) => (
             <DocumentUploadCard
