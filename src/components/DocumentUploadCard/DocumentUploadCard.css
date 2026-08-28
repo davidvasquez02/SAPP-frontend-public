@@ -171,6 +171,12 @@
   font-size: 0.85rem;
 }
 
+.document-upload-card__formats {
+  margin: -0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 
 .document-upload-card__status--approved {
   background: color-mix(in srgb, #22c55e, var(--surface) 84%);

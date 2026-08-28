@@ -15,6 +15,11 @@ import { CODIGO_TIPO_TRAMITE_ADMISION_ASPIRANTE } from '../../modules/documentos
 import { fileToBase64 } from '../../utils/fileToBase64'
 import { sha256Hex } from '../../utils/sha256'
 import type { DocumentUploadItem } from '../../modules/documentos/types/documentUploadTypes'
+import {
+  getDocumentRequirementCategory,
+  getInvalidFileMessage,
+  isFileAllowedForCategory,
+} from '../../modules/documentos/documentFormatConfig'
 import type { AspiranteUser } from '../../context/Auth'
 import './AspiranteDocumentosPage.css'
 
@@ -38,6 +43,7 @@ const mapDocumentoToUploadItem = (documento: DocumentChecklistItemDto): Document
     nombre: documento.nombreTipoDocumentoTramite,
     descripcion: documento.descripcionTipoDocumentoTramite,
     obligatorio: documento.obligatorioTipoDocumentoTramite,
+    formatCategory: getDocumentRequirementCategory(documento.codigoTipoDocumentoTramite),
     status,
     selectedFile: null,
     uploadedFileName: isUploaded ? uploaded?.nombreArchivoDocumento : undefined,
@@ -238,7 +244,7 @@ const AspiranteDocumentosPage = () => {
     ? Math.round((obligatoriosCargados / obligatoriosTotales) * 100)
     : 100
 
-  const handleSelectFile = useCallback((id: number, file: File | null) => {
+  const handleSelectFile = useCallback((id: number, file: File | null, validationError?: string) => {
     setItems((prev) =>
       prev.map((item) =>
         item.id === id
@@ -246,7 +252,7 @@ const AspiranteDocumentosPage = () => {
               ...item,
               selectedFile: file,
               status: file ? 'READY_TO_UPLOAD' : 'NOT_SELECTED',
-              errorMessage: undefined,
+              errorMessage: validationError,
               rejectionReason: undefined,
             }
           : item,
@@ -265,6 +271,22 @@ const AspiranteDocumentosPage = () => {
       const item = items.find((current) => current.id === id)
 
       if (!item?.selectedFile) {
+        return
+      }
+
+      if (!isFileAllowedForCategory(item.selectedFile, item.formatCategory)) {
+        setItems((prev) =>
+          prev.map((current) =>
+            current.id === id
+              ? {
+                  ...current,
+                  status: 'ERROR',
+                  selectedFile: null,
+                  errorMessage: getInvalidFileMessage(current.formatCategory),
+                }
+              : current,
+          ),
+        )
         return
       }
 
@@ -441,8 +463,7 @@ const AspiranteDocumentosPage = () => {
               onSelectFile={handleSelectFile}
               onUpload={handleUpload}
               disabled={item.status === 'UPLOADING'}
-              fileAccept={item.codigo === 'ANX-4' ? 'image/*' : undefined}
-              previewAsImage={item.codigo === 'ANX-4'}
+              previewAsImage={item.formatCategory === 'PHOTOGRAPH'}
             />
           ))
         )}
