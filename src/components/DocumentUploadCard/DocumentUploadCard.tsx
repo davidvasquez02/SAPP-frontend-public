@@ -1,16 +1,20 @@
 import { useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { DocumentUploadItem } from '../../modules/documentos/types/documentUploadTypes'
+import {
+  getDocumentFormatConfig,
+  getInvalidFileMessage,
+  isFileAllowedForCategory,
+} from '../../modules/documentos/documentFormatConfig'
 import { openBase64InNewTab } from '../../shared/files/base64FileUtils'
 import './DocumentUploadCard.css'
 
 interface DocumentUploadCardProps {
   item: DocumentUploadItem
-  onSelectFile: (id: number, file: File | null) => void
+  onSelectFile: (id: number, file: File | null, validationError?: string) => void
   onUpload?: (id: number) => void
   onRemoveFile?: (id: number) => void
   disabled?: boolean
-  fileAccept?: string
   previewAsImage?: boolean
 }
 
@@ -54,7 +58,6 @@ export const DocumentUploadCard = ({
   onUpload,
   onRemoveFile,
   disabled = false,
-  fileAccept,
   previewAsImage = false,
 }: DocumentUploadCardProps) => {
   const [selectedPreviewDataUrl, setSelectedPreviewDataUrl] = useState<string | null>(null)
@@ -76,9 +79,17 @@ export const DocumentUploadCard = ({
     return `data:${item.uploadedMimeType};base64,${item.uploadedBase64}`
   }, [item.uploadedBase64, item.uploadedMimeType, previewAsImage])
   const previewUrl = item.selectedFile ? selectedPreviewDataUrl : uploadedPreviewUrl
+  const formatConfig = getDocumentFormatConfig(item.formatCategory)
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null
+    if (file && !isFileAllowedForCategory(file, item.formatCategory)) {
+      event.target.value = ''
+      setSelectedPreviewDataUrl(null)
+      onSelectFile(item.id, null, getInvalidFileMessage(item.formatCategory))
+      return
+    }
+
     if (previewAsImage && file?.type.startsWith('image/')) {
       const reader = new FileReader()
       reader.onload = () => {
@@ -130,7 +141,7 @@ export const DocumentUploadCard = ({
           <input
             id={inputId}
             type="file"
-            accept={fileAccept}
+            accept={formatConfig.accept}
             onChange={handleChange}
             disabled={disabled}
           />
@@ -167,6 +178,10 @@ export const DocumentUploadCard = ({
           </button>
         ) : null}
       </div>
+
+      <p className="document-upload-card__formats">
+        Formatos permitidos: {formatConfig.readableFormats}.
+      </p>
 
       {previewAsImage ? (
         <div className="document-upload-card__image-preview">

@@ -1,3 +1,5 @@
+import type { DocumentFormatCategory } from '../documentFormatConfig'
+
 export type UploadStatus =
   | 'NOT_SELECTED'
   | 'READY_TO_UPLOAD'
@@ -13,6 +15,7 @@ export interface DocumentUploadItem {
   nombre: string
   descripcion?: string | null
   obligatorio: boolean
+  formatCategory: DocumentFormatCategory
   status: UploadStatus
   selectedFile: File | null
   uploadedFileName?: string
