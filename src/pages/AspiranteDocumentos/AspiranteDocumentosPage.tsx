@@ -244,24 +244,8 @@ const AspiranteDocumentosPage = () => {
     ? Math.round((obligatoriosCargados / obligatoriosTotales) * 100)
     : 100
 
-  const handleSelectFile = useCallback((id: number, file: File | null, validationError?: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              selectedFile: file,
-              status: file ? 'READY_TO_UPLOAD' : 'NOT_SELECTED',
-              errorMessage: validationError,
-              rejectionReason: undefined,
-            }
-          : item,
-      ),
-    )
-  }, [])
-
   const handleUpload = useCallback(
-    async (id: number) => {
+    async (id: number, selectedFile?: File) => {
       if (!session || session.kind !== 'ASPIRANTE') {
         console.error('[AspiranteDocumentos] sesión de aspirante no disponible')
         return
@@ -270,11 +254,13 @@ const AspiranteDocumentosPage = () => {
 
       const item = items.find((current) => current.id === id)
 
-      if (!item?.selectedFile) {
+      const file = selectedFile ?? item?.selectedFile
+
+      if (!item || !file) {
         return
       }
 
-      if (!isFileAllowedForCategory(item.selectedFile, item.formatCategory)) {
+      if (!isFileAllowedForCategory(file, item.formatCategory)) {
         setItems((prev) =>
           prev.map((current) =>
             current.id === id
@@ -314,19 +300,19 @@ const AspiranteDocumentosPage = () => {
           return
         }
 
-        const buffer = await item.selectedFile.arrayBuffer()
-        const contenidoBase64 = await fileToBase64(item.selectedFile)
+        const buffer = await file.arrayBuffer()
+        const contenidoBase64 = await fileToBase64(file)
         const checksum = await sha256Hex(buffer)
 
         const uploaded = await uploadDocument({
           tipoDocumentoTramiteId: item.id,
-          nombreArchivo: item.selectedFile.name,
+          nombreArchivo: file.name,
           tramiteId,
           usuarioCargaId: null,
           aspiranteCargaId: aspiranteUser.id,
           contenidoBase64,
-          mimeType: item.selectedFile.type || 'application/octet-stream',
-          tamanoBytes: item.selectedFile.size,
+          mimeType: file.type || 'application/octet-stream',
+          tamanoBytes: file.size,
           checksum,
         })
 
@@ -367,7 +353,17 @@ const AspiranteDocumentosPage = () => {
             codigoTipoTramite: CODIGO_TIPO_TRAMITE_ADMISION_ASPIRANTE,
             tramiteId,
           })
-          setItems(documentos.map(mapDocumentoToUploadItem))
+          const refreshedItem = documentos.find(
+            (documento) => documento.idTipoDocumentoTramite === id,
+          )
+
+          if (refreshedItem) {
+            setItems((prev) =>
+              prev.map((current) =>
+                current.id === id ? mapDocumentoToUploadItem(refreshedItem) : current,
+              ),
+            )
+          }
         } catch (refreshError) {
           const refreshMessage =
             refreshError instanceof Error ? refreshError.message : String(refreshError)
@@ -383,6 +379,29 @@ const AspiranteDocumentosPage = () => {
       }
     },
     [items, session],
+  )
+
+  const handleSelectFile = useCallback(
+    (id: number, file: File | null, validationError?: string) => {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                selectedFile: file,
+                status: file ? 'READY_TO_UPLOAD' : 'NOT_SELECTED',
+                errorMessage: validationError,
+                rejectionReason: undefined,
+              }
+            : item,
+        ),
+      )
+
+      if (file) {
+        void handleUpload(id, file)
+      }
+    },
+    [handleUpload],
   )
 
   const handleAgregarInformacionInvestigacion = useCallback(async () => {
@@ -461,7 +480,6 @@ const AspiranteDocumentosPage = () => {
               key={item.id}
               item={item}
               onSelectFile={handleSelectFile}
-              onUpload={handleUpload}
               disabled={item.status === 'UPLOADING'}
               previewAsImage={item.formatCategory === 'PHOTOGRAPH'}
             />
