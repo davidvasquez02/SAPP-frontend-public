@@ -7,6 +7,18 @@ import type { AspiranteLoginParams, AuthContextValue, AuthSession } from './type
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+const ESTADOS_SIN_ACCESO = new Set(['APROBADO', 'RECHAZADO'])
+
+const validarAccesoAspirante = (estadoInscripcion: string) => {
+  const estadoNormalizado = estadoInscripcion.trim().toUpperCase()
+
+  if (ESTADOS_SIN_ACCESO.has(estadoNormalizado)) {
+    throw new Error(
+      `No puedes ingresar al módulo de aspirantes porque tu inscripción se encuentra en estado ${estadoNormalizado}.`,
+    )
+  }
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSessionState] = useState<AuthSession | null>(() => {
     clearSession()
@@ -15,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loginAspirante = useCallback(async (params: AspiranteLoginParams) => {
     const info = await consultaInfoAspirante(params)
+    validarAccesoAspirante(info.estadoInscripcion)
     const authenticatedSession = mapAspiranteInfoToSession(info)
     setSessionState(authenticatedSession)
     saveSession(authenticatedSession)
