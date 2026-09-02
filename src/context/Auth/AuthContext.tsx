@@ -7,7 +7,7 @@ import type { AspiranteLoginParams, AuthContextValue, AuthSession } from './type
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const ESTADOS_SIN_ACCESO = new Set(['APROBADO', 'RECHAZADO'])
+const ESTADOS_SIN_ACCESO = new Set(['ADMITIDO', 'RECHAZADO'])
 
 const validarAccesoAspirante = (estadoInscripcion: string) => {
   const estadoNormalizado = estadoInscripcion.trim().toUpperCase()
