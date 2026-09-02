@@ -1,8 +1,26 @@
+export interface AspiranteConvocatoria {
+  cupos: number
+  fechaFin: string
+  fechaInicio: string
+  id: number
+  observaciones?: string | null
+  periodo: string
+  periodoId: number
+  programa: string
+  programaId: number
+  vigente: boolean
+}
+
 export interface AspiranteUser {
   id: number
   roles: string[]
   numeroInscripcionUis: string
   nombre?: string
+  nombre1?: string
+  nombre2?: string
+  apellido1?: string
+  apellido2?: string
+  foto?: string
   director?: string
   grupoInvestigacion?: string
   telefono?: string
@@ -10,8 +28,15 @@ export interface AspiranteUser {
   numeroDocumento: string
   emailPersonal?: string
   fechaRegistro?: string
+  fechaInscripcion?: string
+  fechaResultado?: string
   observaciones?: string | null
+  observacionesInscripcion?: string | null
   inscripcionAdmisionId?: number | null
+  estadoInscripcion: string
+  posicionAdmision?: number | null
+  puntajeTotal?: number | null
+  convocatoria: AspiranteConvocatoria
 }
 
 export interface AspiranteLoginParams {
