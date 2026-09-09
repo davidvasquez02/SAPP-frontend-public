@@ -24,7 +24,7 @@ const AspiranteLayout = ({ children }: PropsWithChildren) => {
             alt="Universidad Industrial de Santander"
           />
           <div className="aspirante-layout__identity">
-            <p className="aspirante-layout__eyebrow">SAPP – Aspirantes</p>
+            <p className="aspirante-layout__eyebrow">Minerva | Aspirantes</p>
             <h1 className="aspirante-layout__name">{nombre ?? 'Aspirante'}</h1>
             <dl className="aspirante-layout__meta-list">
               <div className="aspirante-layout__meta-item">
