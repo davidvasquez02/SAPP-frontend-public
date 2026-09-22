@@ -45,6 +45,18 @@ npm run dev
 npm run build
 ```
 
+## Despliegue y rutas SPA
+
+El contenedor incluye una regla explícita de fallback para las invitaciones
+`/evaluacion/{token}`. Estas URL deben llegar al contenedor del frontend: Nginx
+entrega `index.html` y React interpreta el token y el parámetro `accion`.
+
+Si existe un ingress, proxy reverso o gateway delante del contenedor, se debe
+enrutar `/evaluacion` y `/evaluacion/*` al servicio **frontend**. Solamente las
+rutas bajo `/api/sapp/*` deben dirigirse al backend. Enviar `/evaluacion/*` al
+backend produce una respuesta de recurso estático inexistente antes de que la
+aplicación React pueda iniciar.
+
 ## Variables de entorno
 
 Crear `.env` o `.env.local` en `SAPP-frontend-public/`:
