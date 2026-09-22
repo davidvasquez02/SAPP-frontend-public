@@ -75,9 +75,17 @@ Para probar local usando la misma ruta relativa de dev/prod:
 ```env
 VITE_API_URL=/api/sapp
 VITE_DEV_PROXY_TARGET=http://localhost:8080
+VITE_EVALUATION_API_PATH=/evaluacionJurado
 ```
 
 El proxy de Vite reenvía `/api/sapp/*` al backend local. El cliente normaliza paths heredados como `/sapp/aspirante/consultaInfo` para evitar duplicar el prefijo.
+
+`VITE_EVALUATION_API_PATH` define el recurso del backend usado por el portal de
+jurados. Su valor predeterminado es `/evaluacionJurado`, por lo que abrir la ruta
+SPA `/evaluacion/{token}` consulta
+`/api/sapp/evaluacionJurado/{token}` y no confunde la ruta pública del navegador
+con el recurso REST. También se aplica a las operaciones `aceptar`, `declinar`,
+`documento` y `evaluacion` del mismo recurso.
 
 `VITE_API_BASE_URL` se mantiene como fallback de compatibilidad para `.env` antiguos.
 

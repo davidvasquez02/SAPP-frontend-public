@@ -11,8 +11,12 @@ interface ApiResponse<T> {
   data: T
 }
 
+const EVALUATION_API_PATH = (
+  import.meta.env.VITE_EVALUATION_API_PATH ?? '/evaluacionJurado'
+).replace(/^\/*|\/*$/g, '')
+
 const route = (token: string, suffix = '') =>
-  `/evaluacion/${encodeURIComponent(token)}${suffix}`
+  `/${EVALUATION_API_PATH}/${encodeURIComponent(token)}${suffix}`
 
 export const getSesionEvaluador = async (token: string) =>
   (await httpGet<ApiResponse<SesionEvaluadorDto>>(route(token), { auth: false })).data
