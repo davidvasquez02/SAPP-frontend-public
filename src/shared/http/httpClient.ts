@@ -58,7 +58,7 @@ export async function http<T>(path: string, options: HttpOptions = {}): Promise<
     headers,
   })
 
-  if (response.status === 401 || response.status === 403) {
+  if (auth && (response.status === 401 || response.status === 403)) {
     clearSession()
     window.location.assign('/login')
     throw new Error('No autorizado')
