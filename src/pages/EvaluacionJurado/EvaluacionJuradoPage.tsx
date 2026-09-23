@@ -30,6 +30,11 @@ const conceptosDocumento = [
   { codigo: 'DESFAVORABLE', nombre: 'Desfavorable', descripcion: 'El trabajo no puede sustentarse' },
 ]
 
+const resultadosSustentacion = [
+  { codigo: 'APROBADO', nombre: 'Aprobado', descripcion: 'La sustentación cumple con los criterios de evaluación' },
+  { codigo: 'NO_APROBADO', nombre: 'No aprobado', descripcion: 'La sustentación no cumple con los criterios de evaluación' },
+]
+
 const formatDate = (value?: string | null) => value
   ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value))
   : 'No informada'
@@ -45,6 +50,11 @@ const momentoLabel = (codigo?: string | null) => codigo === 'CONCEPTO_DOCUMENTO'
 const getConceptos = (session?: SesionEvaluadorDto | null) => {
   const conceptos = session?.conceptos ?? session?.catalogos?.conceptos
   return conceptos?.length ? conceptos : conceptosDocumento
+}
+
+const getResultados = (session?: SesionEvaluadorDto | null) => {
+  const resultados = session?.resultados ?? session?.catalogos?.resultados
+  return resultados?.length ? resultados : resultadosSustentacion
 }
 
 const EvaluacionJuradoPage = ({ token }: Props) => {
@@ -114,7 +124,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
     const numeric = moment !== CONCEPTO_DOCUMENTO && session?.tipoSolicitudCodigo === 'CAND_DOCTORAL'
     const options = moment === CONCEPTO_DOCUMENTO
       ? getConceptos(session)
-      : (session?.resultados ?? session?.catalogos?.resultados ?? [])
+      : getResultados(session)
     if (numeric && (Number(nota) < 0 || Number(nota) > 5 || nota === '')) { setError('La nota debe estar entre 0,0 y 5,0.'); return }
     if (!numeric && options.length && !selection) { setError('Selecciona una calificación.'); return }
     void run(() => registrarEvaluacion(token, {
@@ -137,7 +147,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   const numeric = activeMoment !== CONCEPTO_DOCUMENTO && session.tipoSolicitudCodigo === 'CAND_DOCTORAL'
   const options = activeMoment === CONCEPTO_DOCUMENTO
     ? getConceptos(session)
-    : (session.resultados ?? session.catalogos?.resultados ?? [])
+    : getResultados(session)
 
   return <div className="evaluation-page">
     <header className="evaluation-header"><img src="/brand/LOGO UIS_PNG.png" alt="Universidad Industrial de Santander" /><div><span>Portal público</span><strong>Evaluación académica</strong></div></header>
