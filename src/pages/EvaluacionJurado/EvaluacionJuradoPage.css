@@ -30,6 +30,14 @@
 .evaluation-decline label, .evaluation-form label { display: grid; gap: .45rem; font-weight: 700; }
 .evaluation-decline label span, .evaluation-form label span { color: #71806d; font-size: .85rem; font-weight: 500; }
 .evaluation-decline textarea, .evaluation-form textarea, .evaluation-form select, .evaluation-form input { width: 100%; background: #fbfcfa; }
+.evaluation-concepts { display: grid; gap: .7rem; margin: 0; padding: 0; border: 0; }
+.evaluation-concepts legend { margin-bottom: .45rem; font-weight: 700; }
+.evaluation-concept { display: flex !important; grid-template-columns: none !important; align-items: flex-start; gap: .8rem !important; padding: 1rem; border: 1px solid #dce4d8; border-radius: 10px; background: #fbfcfa; cursor: pointer; }
+.evaluation-concept:hover { border-color: #94b782; }
+.evaluation-concept--selected { border-color: #397b12; background: #f0f7eb; box-shadow: 0 0 0 1px #397b12; }
+.evaluation-concept input { width: auto; margin-top: .2rem; accent-color: #397b12; }
+.evaluation-concept span { display: grid; gap: .25rem; }
+.evaluation-concept small { color: #647061; font-weight: 500; line-height: 1.35; }
 .evaluation-decline > div { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .evaluation-link { border: 0; background: none; color: #397b12; font-weight: 700; cursor: pointer; }
 .evaluation-alert { padding: .9rem 1rem; border-radius: 10px; font-weight: 600; }

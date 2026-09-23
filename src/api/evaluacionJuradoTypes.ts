@@ -17,15 +17,18 @@ export interface EvaluacionRegistradaDto {
 }
 
 export interface SesionEvaluadorDto {
+  juradoId?: number
   nombreJurado: string
   estadoInvitacion: string
+  motivoDeclinacion?: string | null
   fechaLimiteEvaluacion?: string | null
   fechaExpiracionEnlace?: string | null
-  titulo: string
+  titulo: string | null
   resumen?: string | null
   nombreEstudiante?: string | null
   programa?: string | null
   tipoSolicitudCodigo?: string | null
+  documentoId?: number | null
   documentoNombre?: string | null
   documentoDisponible: boolean
   fechaSustentacion?: string | null
