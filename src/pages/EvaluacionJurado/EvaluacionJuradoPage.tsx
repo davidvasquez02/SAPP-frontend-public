@@ -24,9 +24,13 @@ const formatDate = (value?: string | null) => value
   ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value))
   : 'No informada'
 
-const momentoLabel = (codigo: string) => codigo === 'CONCEPTO_DOCUMENTO'
+const codigoLabel = (codigo?: string | null, fallback = 'Registrada') => codigo
+  ? codigo.replaceAll('_', ' ').toLocaleLowerCase('es-CO').replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase('es-CO'))
+  : fallback
+
+const momentoLabel = (codigo?: string | null) => codigo === 'CONCEPTO_DOCUMENTO'
   ? 'Concepto sobre el documento'
-  : codigo === 'SUSTENTACION' ? 'Evaluación de la sustentación' : codigo.replaceAll('_', ' ')
+  : codigo === 'SUSTENTACION' ? 'Evaluación de la sustentación' : codigoLabel(codigo, 'Evaluación registrada')
 
 const getConceptos = (session?: SesionEvaluadorDto | null) => {
   const conceptos = session?.conceptos ?? session?.catalogos?.conceptos
@@ -130,7 +134,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       <section className="evaluation-welcome"><p className="evaluation-eyebrow">Invitación personal</p><h1>Hola, {session.nombreJurado}</h1><p>Has sido invitado(a) a participar como jurado evaluador.</p></section>
       {error && <div className="evaluation-alert evaluation-alert--error" role="alert">{error}</div>}
       {notice && <div className="evaluation-alert evaluation-alert--success" role="status">{notice}</div>}
-      <section className="evaluation-card evaluation-work"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Trabajo académico</p><h2>{session.titulo || session.documentoNombre || 'Documento por evaluar'}</h2></div><span className="evaluation-chip">{session.estadoInvitacion.replaceAll('_', ' ')}</span></div>
+      <section className="evaluation-card evaluation-work"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Trabajo académico</p><h2>{session.titulo || session.documentoNombre || 'Documento por evaluar'}</h2></div><span className="evaluation-chip">{codigoLabel(session.estadoInvitacion, 'Sin estado')}</span></div>
         <dl className="evaluation-details"><div><dt>Estudiante</dt><dd>{session.nombreEstudiante || 'No informado'}</dd></div><div><dt>Programa</dt><dd>{session.programa || 'No informado'}</dd></div><div><dt>Fecha límite</dt><dd>{formatDate(session.fechaLimiteEvaluacion)}</dd></div></dl>
         {session.resumen && <div className="evaluation-summary"><h3>Resumen</h3><p>{session.resumen}</p></div>}
       </section>
@@ -143,7 +147,17 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
           {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? 'Concepto' : 'Resultado'}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
           <label>Observaciones <span>(opcional)</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label><button className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Enviar evaluación</button></form>
       </section>}
-      {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>Evaluaciones registradas</h2><div className="evaluation-records">{session.evaluaciones.map((item) => <article key={item.momentoCodigo}><strong>{item.momentoNombre || momentoLabel(item.momentoCodigo)}</strong><span>{item.conceptoNombre || item.resultadoNombre || item.conceptoCodigo || item.resultadoCodigo || (item.nota != null ? `Nota: ${item.nota}` : 'Registrada')}</span>{item.observaciones && <p>{item.observaciones}</p>}</article>)}</div></section>}
+      {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>Evaluaciones registradas</h2><div className="evaluation-records">{session.evaluaciones.map((item, index) => {
+        const momento = item.momentoCodigo ?? item.momento
+        const calificacion = item.conceptoNombre ?? item.resultadoNombre ?? item.conceptoCodigo
+          ?? item.resultadoCodigo ?? item.concepto ?? item.resultado
+        return <article key={item.id ?? `${momento ?? 'evaluacion'}-${index}`}>
+          <strong>{item.momentoNombre || momentoLabel(momento)}</strong>
+          <span>{calificacion ? codigoLabel(calificacion) : item.nota != null ? `Nota: ${item.nota}` : 'Registrada'}</span>
+          {item.observaciones && <p>{item.observaciones}</p>}
+          {item.fechaRegistro && <time dateTime={item.fechaRegistro}>Registrada el {formatDate(item.fechaRegistro)}</time>}
+        </article>
+      })}</div></section>}
       {!session.puedeResponderInvitacion && !canEvaluate && !session.evaluaciones?.length && <section className="evaluation-card evaluation-complete"><h2>Respuesta registrada</h2><p>No tienes acciones pendientes en este momento.</p></section>}
     </main><footer className="evaluation-footer">Universidad Industrial de Santander · Sistema de Apoyo a Procesos de Posgrado</footer>
   </div>
