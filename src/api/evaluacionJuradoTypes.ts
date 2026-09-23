@@ -20,6 +20,14 @@ export interface EvaluacionRegistradaDto {
   fechaRegistro?: string | null
 }
 
+export interface MomentoPendienteDto {
+  codigo: string
+  nombre?: string | null
+  requiereConcepto?: boolean
+  requiereResultado?: boolean
+  requiereNota?: boolean
+}
+
 export interface SesionEvaluadorDto {
   juradoId?: number
   nombreJurado: string
@@ -41,7 +49,7 @@ export interface SesionEvaluadorDto {
   enlaceSustentacion?: string | null
   puedeResponderInvitacion: boolean
   puedeEvaluar: boolean
-  momentosPendientes: string[]
+  momentosPendientes: Array<string | MomentoPendienteDto>
   evaluaciones: EvaluacionRegistradaDto[]
   conceptos?: CatalogoEvaluacionDto[]
   resultados?: CatalogoEvaluacionDto[]
