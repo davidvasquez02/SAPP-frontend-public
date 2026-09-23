@@ -38,6 +38,7 @@
 .evaluation-concept input { width: auto; margin-top: .2rem; accent-color: #397b12; }
 .evaluation-concept span { display: grid; gap: .25rem; }
 .evaluation-concept small { color: #647061; font-weight: 500; line-height: 1.35; }
+.evaluation-form__help { margin: -.25rem 0 0; color: #647061; font-size: .88rem; }
 .evaluation-decline > div { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .evaluation-link { border: 0; background: none; color: #397b12; font-weight: 700; cursor: pointer; }
 .evaluation-alert { padding: .9rem 1rem; border-radius: 10px; font-weight: 600; }
