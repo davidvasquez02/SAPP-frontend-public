@@ -7,7 +7,7 @@ import {
   getSesionEvaluador,
   registrarEvaluacion,
 } from '../../api/evaluacionJuradoService'
-import type { SesionEvaluadorDto } from '../../api/evaluacionJuradoTypes'
+import type { MomentoPendienteDto, SesionEvaluadorDto } from '../../api/evaluacionJuradoTypes'
 import './EvaluacionJuradoPage.css'
 
 interface Props { token: string }
@@ -46,6 +46,14 @@ const codigoLabel = (codigo?: string | null, fallback = 'Registrada') => codigo
 const momentoLabel = (codigo?: string | null) => codigo === 'CONCEPTO_DOCUMENTO'
   ? 'Concepto sobre el documento'
   : codigo === 'SUSTENTACION' ? 'Evaluación de la sustentación' : codigoLabel(codigo, 'Evaluación registrada')
+
+const getMomentoCodigo = (momento: string | MomentoPendienteDto) => typeof momento === 'string'
+  ? momento
+  : momento.codigo
+
+const getMomentosPendientes = (session?: SesionEvaluadorDto | null) => (session?.momentosPendientes ?? [])
+  .map(getMomentoCodigo)
+  .filter((codigo): codigo is string => typeof codigo === 'string' && codigo.length > 0)
 
 const getConceptos = (session?: SesionEvaluadorDto | null) => {
   const conceptos = session?.conceptos ?? session?.catalogos?.conceptos
@@ -115,7 +123,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   const submitEvaluation = (event: FormEvent) => {
     event.preventDefault()
-    const pendingMoments = session?.momentosPendientes ?? []
+    const pendingMoments = getMomentosPendientes(session)
     const moment = selectedMoment || pendingMoments[0] || ''
     if (!session?.puedeEvaluar || !moment || !pendingMoments.includes(moment)) {
       setError('No tienes una evaluación pendiente habilitada.')
@@ -139,7 +147,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   if (loading) return <main className="evaluation-state"><div className="evaluation-spinner" /><p>Consultando invitación…</p></main>
   if (!session) return <main className="evaluation-state"><section className="evaluation-message evaluation-message--error"><h1>No fue posible abrir la invitación</h1><p>{error}</p></section></main>
 
-  const pendingMoments = session.momentosPendientes ?? []
+  const pendingMoments = getMomentosPendientes(session)
   const canEvaluate = session.puedeEvaluar && pendingMoments.length > 0
   const activeMoment = selectedMoment && pendingMoments.includes(selectedMoment)
     ? selectedMoment
