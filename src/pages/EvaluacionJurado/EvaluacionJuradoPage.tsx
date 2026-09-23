@@ -12,6 +12,14 @@ import './EvaluacionJuradoPage.css'
 
 interface Props { token: string }
 
+const CONCEPTO_DOCUMENTO = 'CONCEPTO_DOCUMENTO'
+
+const conceptosDocumento = [
+  { codigo: 'FAVORABLE', nombre: 'Favorable', descripcion: 'El trabajo puede sustentarse sin cambios' },
+  { codigo: 'FAVORABLE_CON_OBSERVACIONES', nombre: 'Favorable con observaciones', descripcion: 'Puede sustentarse después de ajustes' },
+  { codigo: 'DESFAVORABLE', nombre: 'Desfavorable', descripcion: 'El trabajo no puede sustentarse' },
+]
+
 const formatDate = (value?: string | null) => value
   ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeStyle: value.includes('T') ? 'short' : undefined }).format(new Date(value))
   : 'No informada'
@@ -19,6 +27,11 @@ const formatDate = (value?: string | null) => value
 const momentoLabel = (codigo: string) => codigo === 'CONCEPTO_DOCUMENTO'
   ? 'Concepto sobre el documento'
   : codigo === 'SUSTENTACION' ? 'Evaluación de la sustentación' : codigo.replaceAll('_', ' ')
+
+const getConceptos = (session?: SesionEvaluadorDto | null) => {
+  const conceptos = session?.conceptos ?? session?.catalogos?.conceptos
+  return conceptos?.length ? conceptos : conceptosDocumento
+}
 
 const EvaluacionJuradoPage = ({ token }: Props) => {
   const [session, setSession] = useState<SesionEvaluadorDto | null>(null)
@@ -77,16 +90,21 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   const submitEvaluation = (event: FormEvent) => {
     event.preventDefault()
-    const moment = selectedMoment || session?.momentosPendientes[0] || ''
-    const numeric = session?.tipoSolicitudCodigo === 'CAND_DOCTORAL'
-    const options = moment === 'CONCEPTO_DOCUMENTO'
-      ? (session?.conceptos ?? session?.catalogos?.conceptos ?? [])
+    const pendingMoments = session?.momentosPendientes ?? []
+    const moment = selectedMoment || pendingMoments[0] || ''
+    if (!session?.puedeEvaluar || !moment || !pendingMoments.includes(moment)) {
+      setError('No tienes una evaluación pendiente habilitada.')
+      return
+    }
+    const numeric = moment !== CONCEPTO_DOCUMENTO && session?.tipoSolicitudCodigo === 'CAND_DOCTORAL'
+    const options = moment === CONCEPTO_DOCUMENTO
+      ? getConceptos(session)
       : (session?.resultados ?? session?.catalogos?.resultados ?? [])
     if (numeric && (Number(nota) < 0 || Number(nota) > 5 || nota === '')) { setError('La nota debe estar entre 0,0 y 5,0.'); return }
     if (!numeric && options.length && !selection) { setError('Selecciona una calificación.'); return }
     void run(() => registrarEvaluacion(token, {
       momentoCodigo: moment,
-      conceptoCodigo: !numeric && moment === 'CONCEPTO_DOCUMENTO' ? selection : null,
+      conceptoCodigo: moment === CONCEPTO_DOCUMENTO ? selection : null,
       resultadoCodigo: !numeric && moment === 'SUSTENTACION' ? selection : null,
       nota: numeric ? Number(nota) : null,
       observaciones: observaciones.trim() || null,
@@ -96,10 +114,14 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   if (loading) return <main className="evaluation-state"><div className="evaluation-spinner" /><p>Consultando invitación…</p></main>
   if (!session) return <main className="evaluation-state"><section className="evaluation-message evaluation-message--error"><h1>No fue posible abrir la invitación</h1><p>{error}</p></section></main>
 
-  const activeMoment = selectedMoment || session.momentosPendientes[0] || ''
-  const numeric = session.tipoSolicitudCodigo === 'CAND_DOCTORAL'
-  const options = activeMoment === 'CONCEPTO_DOCUMENTO'
-    ? (session.conceptos ?? session.catalogos?.conceptos ?? [])
+  const pendingMoments = session.momentosPendientes ?? []
+  const canEvaluate = session.puedeEvaluar && pendingMoments.length > 0
+  const activeMoment = selectedMoment && pendingMoments.includes(selectedMoment)
+    ? selectedMoment
+    : pendingMoments[0] ?? ''
+  const numeric = activeMoment !== CONCEPTO_DOCUMENTO && session.tipoSolicitudCodigo === 'CAND_DOCTORAL'
+  const options = activeMoment === CONCEPTO_DOCUMENTO
+    ? getConceptos(session)
     : (session.resultados ?? session.catalogos?.resultados ?? [])
 
   return <div className="evaluation-page">
@@ -108,21 +130,21 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       <section className="evaluation-welcome"><p className="evaluation-eyebrow">Invitación personal</p><h1>Hola, {session.nombreJurado}</h1><p>Has sido invitado(a) a participar como jurado evaluador.</p></section>
       {error && <div className="evaluation-alert evaluation-alert--error" role="alert">{error}</div>}
       {notice && <div className="evaluation-alert evaluation-alert--success" role="status">{notice}</div>}
-      <section className="evaluation-card evaluation-work"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Trabajo académico</p><h2>{session.titulo}</h2></div><span className="evaluation-chip">{session.estadoInvitacion.replaceAll('_', ' ')}</span></div>
+      <section className="evaluation-card evaluation-work"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Trabajo académico</p><h2>{session.titulo || session.documentoNombre || 'Documento por evaluar'}</h2></div><span className="evaluation-chip">{session.estadoInvitacion.replaceAll('_', ' ')}</span></div>
         <dl className="evaluation-details"><div><dt>Estudiante</dt><dd>{session.nombreEstudiante || 'No informado'}</dd></div><div><dt>Programa</dt><dd>{session.programa || 'No informado'}</dd></div><div><dt>Fecha límite</dt><dd>{formatDate(session.fechaLimiteEvaluacion)}</dd></div></dl>
         {session.resumen && <div className="evaluation-summary"><h3>Resumen</h3><p>{session.resumen}</p></div>}
       </section>
       {session.puedeResponderInvitacion && <section className="evaluation-card"><h2>Confirma tu participación</h2><p>Tu respuesta permitirá continuar oportunamente con el proceso.</p><div className="evaluation-actions"><button className="evaluation-button evaluation-button--primary" disabled={working} onClick={() => void run(() => aceptarInvitacion(token), 'Has aceptado la invitación.')}>Acepto ser jurado</button><button className="evaluation-button evaluation-button--secondary" disabled={working} onClick={() => setDeclining(true)}>No puedo participar</button></div>
         {declining && <form className="evaluation-decline" onSubmit={(event) => { event.preventDefault(); void run(() => declinarInvitacion(token, motivo.trim() || undefined), 'Has declinado la invitación.') }}><label>Motivo <span>(opcional)</span><textarea rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Puedes contarnos brevemente el motivo." /></label><div><button className="evaluation-button evaluation-button--danger" disabled={working}>Confirmar que no participaré</button><button type="button" className="evaluation-link" onClick={() => setDeclining(false)}>Cancelar</button></div></form>}
       </section>}
-      {session.puedeEvaluar && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Evaluación pendiente</p><h2>{momentoLabel(activeMoment)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>Descargar documento</button>}</div>
+      {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Evaluación pendiente</p><h2>{momentoLabel(activeMoment)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>Descargar documento</button>}</div>
         {session.fechaSustentacion && <div className="evaluation-schedule"><strong>Sustentación:</strong> {formatDate(session.fechaSustentacion)} · {session.modalidadSustentacion}{session.lugarSustentacion ? ` · ${session.lugarSustentacion}` : ''}{session.enlaceSustentacion && <> · <a href={session.enlaceSustentacion} target="_blank" rel="noreferrer">Abrir enlace</a></>}</div>}
-        <form className="evaluation-form" onSubmit={submitEvaluation}>{session.momentosPendientes.length > 1 && <label>Momento<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{session.momentosPendientes.map((item) => <option key={item} value={item}>{momentoLabel(item)}</option>)}</select></label>}
-          {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <label>Calificación<select value={selection} onChange={(event) => setSelection(event.target.value)} required><option value="">Selecciona una opción</option>{options.map((item) => <option key={item.codigo} value={item.codigo}>{item.nombre}</option>)}</select></label> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
+        <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>Momento<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item)}</option>)}</select></label>}
+          {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? 'Concepto' : 'Resultado'}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
           <label>Observaciones <span>(opcional)</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label><button className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Enviar evaluación</button></form>
       </section>}
       {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>Evaluaciones registradas</h2><div className="evaluation-records">{session.evaluaciones.map((item) => <article key={item.momentoCodigo}><strong>{item.momentoNombre || momentoLabel(item.momentoCodigo)}</strong><span>{item.conceptoNombre || item.resultadoNombre || item.conceptoCodigo || item.resultadoCodigo || (item.nota != null ? `Nota: ${item.nota}` : 'Registrada')}</span>{item.observaciones && <p>{item.observaciones}</p>}</article>)}</div></section>}
-      {!session.puedeResponderInvitacion && !session.puedeEvaluar && !session.evaluaciones?.length && <section className="evaluation-card evaluation-complete"><h2>Respuesta registrada</h2><p>No tienes acciones pendientes en este momento.</p></section>}
+      {!session.puedeResponderInvitacion && !canEvaluate && !session.evaluaciones?.length && <section className="evaluation-card evaluation-complete"><h2>Respuesta registrada</h2><p>No tienes acciones pendientes en este momento.</p></section>}
     </main><footer className="evaluation-footer">Universidad Industrial de Santander · Sistema de Apoyo a Procesos de Posgrado</footer>
   </div>
 }
