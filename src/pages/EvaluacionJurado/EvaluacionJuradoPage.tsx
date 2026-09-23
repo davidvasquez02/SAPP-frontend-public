@@ -14,6 +14,16 @@ interface Props { token: string }
 
 const CONCEPTO_DOCUMENTO = 'CONCEPTO_DOCUMENTO'
 
+type InvitationAction = 'aceptar' | 'declinar' | null
+
+const getInvitationAction = (): InvitationAction => {
+  const action = new URLSearchParams(window.location.search).get('accion')?.trim().toLowerCase()
+
+  if (action === 'aceptar') return 'aceptar'
+  if (action === 'declinar' || action === 'rechazar') return 'declinar'
+  return null
+}
+
 const conceptosDocumento = [
   { codigo: 'FAVORABLE', nombre: 'Favorable', descripcion: 'El trabajo puede sustentarse sin cambios' },
   { codigo: 'FAVORABLE_CON_OBSERVACIONES', nombre: 'Favorable con observaciones', descripcion: 'Puede sustentarse después de ajustes' },
@@ -59,10 +69,11 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   useEffect(() => {
     let active = true
+    const requestedAction = getInvitationAction()
+
     getSesionEvaluador(token).then(async (data) => {
       if (!active) return
-      const action = new URLSearchParams(window.location.search).get('accion')?.toLowerCase()
-      if (data.puedeResponderInvitacion && action === 'aceptar') {
+      if (data.puedeResponderInvitacion && requestedAction === 'aceptar') {
         setWorking(true)
         try {
           const updated = await aceptarInvitacion(token)
@@ -73,7 +84,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
         return
       }
       setSession(data)
-      if (data.puedeResponderInvitacion && (action === 'declinar' || action === 'rechazar')) setDeclining(true)
+      if (data.puedeResponderInvitacion && requestedAction === 'declinar') setDeclining(true)
     })
       .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : 'No fue posible abrir el enlace.') })
       .finally(() => { if (active) setLoading(false) })
@@ -144,8 +155,9 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Evaluación pendiente</p><h2>{momentoLabel(activeMoment)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>Descargar documento</button>}</div>
         {session.fechaSustentacion && <div className="evaluation-schedule"><strong>Sustentación:</strong> {formatDate(session.fechaSustentacion)} · {session.modalidadSustentacion}{session.lugarSustentacion ? ` · ${session.lugarSustentacion}` : ''}{session.enlaceSustentacion && <> · <a href={session.enlaceSustentacion} target="_blank" rel="noreferrer">Abrir enlace</a></>}</div>}
         <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>Momento<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item)}</option>)}</select></label>}
-          {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? 'Concepto' : 'Resultado'}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
-          <label>Observaciones <span>(opcional)</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label><button className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Enviar evaluación</button></form>
+          {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts" aria-describedby="evaluation-save-help"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? 'Concepto' : 'Resultado'}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
+          {!numeric && options.length > 0 && <p id="evaluation-save-help" className="evaluation-form__help">La opción seleccionada no se enviará hasta que presiones “Guardar evaluación”.</p>}
+          <label>Observaciones <span>(opcional)</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label><button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Guardar evaluación</button></form>
       </section>}
       {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>Evaluaciones registradas</h2><div className="evaluation-records">{session.evaluaciones.map((item, index) => {
         const momento = item.momentoCodigo ?? item.momento
