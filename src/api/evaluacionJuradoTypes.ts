@@ -5,7 +5,11 @@ export interface CatalogoEvaluacionDto {
 }
 
 export interface EvaluacionRegistradaDto {
-  momentoCodigo: string
+  id?: number
+  momento?: string
+  concepto?: string | null
+  resultado?: string | null
+  momentoCodigo?: string
   momentoNombre?: string
   conceptoCodigo?: string | null
   conceptoNombre?: string | null
