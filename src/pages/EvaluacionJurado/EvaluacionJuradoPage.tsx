@@ -13,6 +13,10 @@ import './EvaluacionJuradoPage.css'
 interface Props { token: string }
 
 const CONCEPTO_DOCUMENTO = 'CONCEPTO_DOCUMENTO'
+const CONCEPTOS_CON_OBSERVACION_OBLIGATORIA = new Set([
+  'FAVORABLE_CON_OBSERVACIONES',
+  'DESFAVORABLE',
+])
 
 type InvitationAction = 'aceptar' | 'declinar' | null
 
@@ -133,8 +137,11 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
     const options = moment === CONCEPTO_DOCUMENTO
       ? getConceptos(session)
       : getResultados(session)
+    const observacionesRequeridas = moment === CONCEPTO_DOCUMENTO
+      && CONCEPTOS_CON_OBSERVACION_OBLIGATORIA.has(selection)
     if (numeric && (Number(nota) < 0 || Number(nota) > 5 || nota === '')) { setError('La nota debe estar entre 0,0 y 5,0.'); return }
     if (!numeric && options.length && !selection) { setError('Selecciona una calificación.'); return }
+    if (observacionesRequeridas && !observaciones.trim()) { setError('Ingresa las observaciones para el concepto seleccionado.'); return }
     void run(() => registrarEvaluacion(token, {
       momentoCodigo: moment,
       conceptoCodigo: moment === CONCEPTO_DOCUMENTO ? selection : null,
@@ -156,6 +163,8 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   const options = activeMoment === CONCEPTO_DOCUMENTO
     ? getConceptos(session)
     : getResultados(session)
+  const observacionesRequeridas = activeMoment === CONCEPTO_DOCUMENTO
+    && CONCEPTOS_CON_OBSERVACION_OBLIGATORIA.has(selection)
 
   return <div className="evaluation-page">
     <header className="evaluation-header"><img src="/brand/LOGO UIS_PNG.png" alt="Universidad Industrial de Santander" /><div><span>Portal público</span><strong>Evaluación académica</strong></div></header>
@@ -175,7 +184,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
         <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>Momento<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item)}</option>)}</select></label>}
           {numeric ? <label>Nota (0,0 a 5,0)<input type="number" min="0" max="5" step="0.1" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts" aria-describedby="evaluation-save-help"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? 'Concepto' : 'Resultado'}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.</p>}
           {!numeric && options.length > 0 && <p id="evaluation-save-help" className="evaluation-form__help">La opción seleccionada no se enviará hasta que presiones “Guardar evaluación”.</p>}
-          <label>Observaciones <span>(opcional)</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label><button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Guardar evaluación</button></form>
+          <label>Observaciones <span>({observacionesRequeridas ? 'obligatorio' : 'opcional'})</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} required={observacionesRequeridas} /></label><button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>Guardar evaluación</button></form>
       </section>}
       {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>Evaluaciones registradas</h2><div className="evaluation-records">{session.evaluaciones.map((item, index) => {
         const momento = item.momentoCodigo ?? item.momento
