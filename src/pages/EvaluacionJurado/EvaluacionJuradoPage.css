@@ -14,7 +14,7 @@
 .evaluation-card h3 { margin: 0 0 .4rem; font-size: 1rem; }
 .evaluation-card__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .evaluation-chip { flex: none; padding: .42rem .75rem; border-radius: 99px; color: #326810; background: #eaf4e4; font-size: .72rem; font-weight: 800; }
-.evaluation-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 1.4rem 0; margin: 1.4rem 0; border-block: 1px solid #e4e9e1; }
+.evaluation-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; padding: 1.4rem 0; margin: 1.4rem 0; border-block: 1px solid #e4e9e1; }
 .evaluation-details div { display: grid; gap: .2rem; }
 .evaluation-details dt { color: #687565; font-size: .78rem; font-weight: 700; }
 .evaluation-details dd { margin: 0; font-weight: 650; }

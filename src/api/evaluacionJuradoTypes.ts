@@ -40,6 +40,8 @@ export interface SesionEvaluadorDto {
   resumen?: string | null
   nombreEstudiante?: string | null
   programa?: string | null
+  tipoTramiteCodigo?: string | null
+  tipoTramite?: string | null
   tipoSolicitudCodigo?: string | null
   documentoId?: number | null
   documentoNombre?: string | null
