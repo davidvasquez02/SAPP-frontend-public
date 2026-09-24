@@ -25,6 +25,9 @@
 .evaluation-button:disabled { cursor: wait; opacity: .55; }
 .evaluation-button--primary { color: #fff; background: #397b12; }
 .evaluation-button--secondary, .evaluation-button--download { color: #2d6410; background: #eef5e9; border: 1px solid #bcd0b1; }
+.evaluation-button--choice { color: #3d493a; background: #fff; border: 1px solid #b8c2b4; }
+.evaluation-button--choice-selected { color: #fff; background: #397b12; border-color: #397b12; box-shadow: 0 0 0 2px rgba(57, 123, 18, .18); }
+.evaluation-button--choice-danger { background: #a5271d; border-color: #a5271d; box-shadow: 0 0 0 2px rgba(165, 39, 29, .16); }
 .evaluation-button--danger { color: #fff; background: #a5271d; }
 .evaluation-decline, .evaluation-form { display: grid; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e4e9e1; }
 .evaluation-decline label, .evaluation-form label { display: grid; gap: .45rem; font-weight: 700; }
