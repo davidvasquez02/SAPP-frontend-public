@@ -68,7 +68,7 @@ const copy = {
     publicPortal: 'Portal público', academicEvaluation: 'Evaluación académica', personalInvitation: 'Invitación personal',
     hello: 'Hola', invited: 'Has sido invitado(a) a participar como jurado evaluador.', academicWork: 'Trabajo académico',
     documentToEvaluate: 'Documento por evaluar', noStatus: 'Sin estado', student: 'Estudiante', program: 'Programa',
-    deadline: 'Fecha límite', notReported: 'No informado', summary: 'Resumen', confirmParticipation: 'Confirma tu participación',
+    procedureType: 'Tipo de trámite', deadline: 'Fecha límite', notReported: 'No informado', summary: 'Resumen', confirmParticipation: 'Confirma tu participación',
     responseHelp: 'Tu respuesta permitirá continuar oportunamente con el proceso.', acceptJury: 'Acepto ser jurado',
     cannotParticipate: 'No puedo participar', reason: 'Motivo', optional: 'opcional',
     reasonPlaceholder: 'Puedes contarnos brevemente el motivo.', confirmParticipate: 'Confirmar que participaré',
@@ -93,7 +93,7 @@ const copy = {
     publicPortal: 'Public portal', academicEvaluation: 'Academic evaluation', personalInvitation: 'Personal invitation',
     hello: 'Hello', invited: 'You have been invited to participate as an evaluator.', academicWork: 'Academic work',
     documentToEvaluate: 'Document to evaluate', noStatus: 'No status', student: 'Student', program: 'Program',
-    deadline: 'Deadline', notReported: 'Not provided', summary: 'Abstract', confirmParticipation: 'Confirm your participation',
+    procedureType: 'Procedure type', deadline: 'Deadline', notReported: 'Not provided', summary: 'Abstract', confirmParticipation: 'Confirm your participation',
     responseHelp: 'Your response will allow the process to continue in a timely manner.', acceptJury: 'I accept the invitation',
     cannotParticipate: 'I cannot participate', reason: 'Reason', optional: 'optional',
     reasonPlaceholder: 'You may briefly explain the reason.', confirmParticipate: 'Confirm my participation',
@@ -268,7 +268,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       {error && <div className="evaluation-alert evaluation-alert--error" role="alert">{error}</div>}
       {notice && <div className="evaluation-alert evaluation-alert--success" role="status">{notice}</div>}
       <section className="evaluation-card evaluation-work"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">{t.academicWork}</p><h2>{session.titulo || session.documentoNombre || t.documentToEvaluate}</h2></div><span className="evaluation-chip">{codigoLabel(session.estadoInvitacion, t.noStatus)}</span></div>
-        <dl className="evaluation-details"><div><dt>{t.student}</dt><dd>{session.nombreEstudiante || t.notReported}</dd></div><div><dt>{t.program}</dt><dd>{session.programa || t.notReported}</dd></div><div><dt>{t.deadline}</dt><dd>{formatDate(session.fechaLimiteEvaluacion, language)}</dd></div></dl>
+        <dl className="evaluation-details"><div><dt>{t.student}</dt><dd>{session.nombreEstudiante || t.notReported}</dd></div><div><dt>{t.program}</dt><dd>{session.programa || t.notReported}</dd></div><div><dt>{t.procedureType}</dt><dd>{session.tipoTramite || t.notReported}</dd></div><div><dt>{t.deadline}</dt><dd>{formatDate(session.fechaLimiteEvaluacion, language)}</dd></div></dl>
         {session.resumen && <div className="evaluation-summary"><h3>{t.summary}</h3><p>{session.resumen}</p></div>}
       </section>
       {session.puedeResponderInvitacion && <section className="evaluation-card"><h2>{t.confirmParticipation}</h2><p>{t.responseHelp}</p><div className="evaluation-actions">
