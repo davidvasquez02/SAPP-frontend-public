@@ -31,6 +31,7 @@ export interface MomentoPendienteDto {
 export interface SesionEvaluadorDto {
   juradoId?: number
   nombreJurado: string
+  idioma?: string | null
   estadoInvitacion: string
   motivoDeclinacion?: string | null
   fechaLimiteEvaluacion?: string | null
