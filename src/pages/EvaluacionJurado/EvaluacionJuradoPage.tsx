@@ -70,12 +70,16 @@ const getResultados = (session?: SesionEvaluadorDto | null) => {
 }
 
 const EvaluacionJuradoPage = ({ token }: Props) => {
+  const [requestedAction] = useState<InvitationAction>(getInvitationAction)
   const [session, setSession] = useState<SesionEvaluadorDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [declining, setDeclining] = useState(false)
+  const [invitationResponse, setInvitationResponse] = useState<InvitationAction>(
+    requestedAction === 'declinar' ? 'declinar' : null,
+  )
   const [motivo, setMotivo] = useState('')
   const [selectedMoment, setSelectedMoment] = useState('')
   const [selection, setSelection] = useState('')
@@ -91,7 +95,6 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   useEffect(() => {
     let active = true
-    const requestedAction = getInvitationAction()
 
     getSesionEvaluador(token).then(async (data) => {
       if (!active) return
@@ -111,7 +114,18 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : 'No fue posible abrir el enlace.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [token])
+  }, [requestedAction, token])
+
+  const submitInvitationResponse = (event: FormEvent) => {
+    event.preventDefault()
+    if (invitationResponse === 'aceptar') {
+      void run(() => aceptarInvitacion(token), 'Has aceptado la invitación.')
+      return
+    }
+    if (invitationResponse === 'declinar') {
+      void run(() => declinarInvitacion(token, motivo.trim() || undefined), 'Has declinado la invitación.')
+    }
+  }
 
   const download = async () => {
     setWorking(true); setError(null)
@@ -165,6 +179,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
     : getResultados(session)
   const observacionesRequeridas = activeMoment === CONCEPTO_DOCUMENTO
     && CONCEPTOS_CON_OBSERVACION_OBLIGATORIA.has(selection)
+  const usesConfirmableInvitationResponse = requestedAction === 'declinar'
 
   return <div className="evaluation-page">
     <header className="evaluation-header"><img src="/brand/LOGO UIS_PNG.png" alt="Universidad Industrial de Santander" /><div><span>Portal público</span><strong>Evaluación académica</strong></div></header>
@@ -176,8 +191,15 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
         <dl className="evaluation-details"><div><dt>Estudiante</dt><dd>{session.nombreEstudiante || 'No informado'}</dd></div><div><dt>Programa</dt><dd>{session.programa || 'No informado'}</dd></div><div><dt>Fecha límite</dt><dd>{formatDate(session.fechaLimiteEvaluacion)}</dd></div></dl>
         {session.resumen && <div className="evaluation-summary"><h3>Resumen</h3><p>{session.resumen}</p></div>}
       </section>
-      {session.puedeResponderInvitacion && <section className="evaluation-card"><h2>Confirma tu participación</h2><p>Tu respuesta permitirá continuar oportunamente con el proceso.</p><div className="evaluation-actions"><button className="evaluation-button evaluation-button--primary" disabled={working} onClick={() => void run(() => aceptarInvitacion(token), 'Has aceptado la invitación.')}>Acepto ser jurado</button><button className="evaluation-button evaluation-button--secondary" disabled={working} onClick={() => setDeclining(true)}>No puedo participar</button></div>
-        {declining && <form className="evaluation-decline" onSubmit={(event) => { event.preventDefault(); void run(() => declinarInvitacion(token, motivo.trim() || undefined), 'Has declinado la invitación.') }}><label>Motivo <span>(opcional)</span><textarea rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Puedes contarnos brevemente el motivo." /></label><div><button className="evaluation-button evaluation-button--danger" disabled={working}>Confirmar que no participaré</button><button type="button" className="evaluation-link" onClick={() => setDeclining(false)}>Cancelar</button></div></form>}
+      {session.puedeResponderInvitacion && <section className="evaluation-card"><h2>Confirma tu participación</h2><p>Tu respuesta permitirá continuar oportunamente con el proceso.</p><div className="evaluation-actions">
+        <button type="button" className={usesConfirmableInvitationResponse ? `evaluation-button evaluation-button--choice${invitationResponse === 'aceptar' ? ' evaluation-button--choice-selected' : ''}` : 'evaluation-button evaluation-button--primary'} aria-pressed={usesConfirmableInvitationResponse ? invitationResponse === 'aceptar' : undefined} disabled={working} onClick={() => usesConfirmableInvitationResponse ? setInvitationResponse('aceptar') : void run(() => aceptarInvitacion(token), 'Has aceptado la invitación.')}>Acepto ser jurado</button>
+        <button type="button" className={usesConfirmableInvitationResponse ? `evaluation-button evaluation-button--choice${invitationResponse === 'declinar' ? ' evaluation-button--choice-selected evaluation-button--choice-danger' : ''}` : 'evaluation-button evaluation-button--secondary'} aria-pressed={usesConfirmableInvitationResponse ? invitationResponse === 'declinar' : undefined} disabled={working} onClick={() => usesConfirmableInvitationResponse ? setInvitationResponse('declinar') : setDeclining(true)}>No puedo participar</button>
+      </div>
+        {usesConfirmableInvitationResponse && <form className="evaluation-decline" onSubmit={submitInvitationResponse}>
+          {invitationResponse === 'declinar' && <label>Motivo <span>(opcional)</span><textarea rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Puedes contarnos brevemente el motivo." /></label>}
+          <div><button className={invitationResponse === 'declinar' ? 'evaluation-button evaluation-button--danger' : 'evaluation-button evaluation-button--primary'} disabled={working || !invitationResponse}>{invitationResponse === 'aceptar' ? 'Confirmar que participaré' : 'Confirmar que no participaré'}</button></div>
+        </form>}
+        {!usesConfirmableInvitationResponse && declining && <form className="evaluation-decline" onSubmit={(event) => { event.preventDefault(); void run(() => declinarInvitacion(token, motivo.trim() || undefined), 'Has declinado la invitación.') }}><label>Motivo <span>(opcional)</span><textarea rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder="Puedes contarnos brevemente el motivo." /></label><div><button className="evaluation-button evaluation-button--danger" disabled={working}>Confirmar que no participaré</button><button type="button" className="evaluation-link" onClick={() => setDeclining(false)}>Cancelar</button></div></form>}
       </section>}
       {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">Evaluación pendiente</p><h2>{momentoLabel(activeMoment)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>Descargar documento</button>}</div>
         {session.fechaSustentacion && <div className="evaluation-schedule"><strong>Sustentación:</strong> {formatDate(session.fechaSustentacion)} · {session.modalidadSustentacion}{session.lugarSustentacion ? ` · ${session.lugarSustentacion}` : ''}{session.enlaceSustentacion && <> · <a href={session.enlaceSustentacion} target="_blank" rel="noreferrer">Abrir enlace</a></>}</div>}
