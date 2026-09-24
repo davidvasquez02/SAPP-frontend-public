@@ -18,6 +18,9 @@ const CONCEPTOS_CON_OBSERVACION_OBLIGATORIA = new Set([
   'DESFAVORABLE',
 ])
 
+const isValidGrade = (value: string) =>
+  /^(?:[0-4](?:[.,]\d{1,2})?|5(?:[.,]0{1,2})?)$/.test(value.trim())
+
 type InvitationAction = 'aceptar' | 'declinar' | null
 
 const getInvitationAction = (): InvitationAction => {
@@ -146,6 +149,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [evaluationError, setEvaluationError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [declining, setDeclining] = useState(false)
   const [invitationResponse, setInvitationResponse] = useState<InvitationAction>(
@@ -214,10 +218,11 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   const submitEvaluation = (event: FormEvent) => {
     event.preventDefault()
+    setEvaluationError(null)
     const pendingMoments = getMomentosPendientes(session)
     const moment = selectedMoment || pendingMoments[0] || ''
     if (!session?.puedeEvaluar || !moment || !pendingMoments.includes(moment)) {
-      setError(t.noPending)
+      setEvaluationError(t.noPending)
       return
     }
     const pendingMoment = getMomentoPendiente(session, moment)
@@ -227,9 +232,9 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       : getResultados(session, language)
     const observacionesRequeridas = moment === CONCEPTO_DOCUMENTO
       && CONCEPTOS_CON_OBSERVACION_OBLIGATORIA.has(selection)
-    if (numeric && (!/^(?:[0-4](?:[.,]\\d{1,2})?|5(?:[.,]0{1,2})?)$/.test(nota) || Number(nota.replace(',', '.')) < 0 || Number(nota.replace(',', '.')) > 5)) { setError(t.invalidGrade); return }
-    if (!numeric && options.length && !selection) { setError(t.selectGrade); return }
-    if (observacionesRequeridas && !observaciones.trim()) { setError(t.observationsRequired); return }
+    if (numeric && !isValidGrade(nota)) { setEvaluationError(t.invalidGrade); return }
+    if (!numeric && options.length && !selection) { setEvaluationError(t.selectGrade); return }
+    if (observacionesRequeridas && !observaciones.trim()) { setEvaluationError(t.observationsRequired); return }
     void run(() => registrarEvaluacion(token, {
       momentoCodigo: moment,
       conceptoCodigo: moment === CONCEPTO_DOCUMENTO ? selection : null,
@@ -279,9 +284,9 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
       {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">{t.pendingEvaluation}</p><h2>{momentoLabel(activeMoment, language)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>{t.download}</button>}</div>
         {session.fechaSustentacion && <div className="evaluation-schedule"><strong>{t.defense}</strong> {formatDate(session.fechaSustentacion, language)} · {session.modalidadSustentacion}{session.lugarSustentacion ? ` · ${session.lugarSustentacion}` : ''}{session.enlaceSustentacion && <> · <a href={session.enlaceSustentacion} target="_blank" rel="noreferrer">{t.openLink}</a></>}</div>}
         <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>{t.moment}<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item, language)}</option>)}</select></label>}
-          {numeric ? <label>{t.grade}<input type="number" min="0" max="5" step="0.01" inputMode="decimal" value={nota} onChange={(event) => setNota(event.target.value)} required /></label> : options.length > 0 ? <fieldset className="evaluation-concepts" aria-describedby="evaluation-save-help"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? t.concept : t.result}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => setSelection(event.target.value)} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">{t.noOptions}</p>}
+          {numeric ? <label>{t.grade}<input type="text" inputMode="decimal" value={nota} onChange={(event) => { setNota(event.target.value); setEvaluationError(null) }} aria-describedby="evaluation-grade-help evaluation-form-error" required /><small id="evaluation-grade-help">{t.gradeHelp}</small></label> : options.length > 0 ? <fieldset className="evaluation-concepts" aria-describedby="evaluation-save-help"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? t.concept : t.result}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => { setSelection(event.target.value); setEvaluationError(null) }} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">{t.noOptions}</p>}
           {!numeric && options.length > 0 && <p id="evaluation-save-help" className="evaluation-form__help">{t.selectionHelp}</p>}
-          <label>{t.observations} <span>({observacionesRequeridas ? t.required : t.optional})</span><textarea rows={5} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} required={observacionesRequeridas} /></label><button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>{t.save}</button></form>
+          <label>{t.observations} <span>({observacionesRequeridas ? t.required : t.optional})</span><textarea rows={5} value={observaciones} onChange={(event) => { setObservaciones(event.target.value); setEvaluationError(null) }} required={observacionesRequeridas} /></label>{evaluationError && <div id="evaluation-form-error" className="evaluation-alert evaluation-alert--error" role="alert">{evaluationError}</div>}<button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>{t.save}</button></form>
       </section>}
       {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>{t.savedEvaluations}</h2><div className="evaluation-records">{session.evaluaciones.map((item, index) => {
         const momento = item.momentoCodigo ?? item.momento
