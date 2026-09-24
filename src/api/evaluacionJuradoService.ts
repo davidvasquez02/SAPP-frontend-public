@@ -35,9 +35,8 @@ export const descargarDocumentoEvaluacion = async (token: string) =>
 export const registrarEvaluacion = async (
   token: string,
   payload: RegistrarEvaluacionPayload,
-) =>
-  (
-    await httpPost<ApiResponse<SesionEvaluadorDto>>(route(token, '/evaluacion'), payload, {
-      auth: false,
-    })
-  ).data
+) => {
+  await httpPost<unknown>(route(token, '/evaluacion'), payload, { auth: false })
+
+  return getSesionEvaluador(token)
+}
