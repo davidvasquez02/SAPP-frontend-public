@@ -93,6 +93,7 @@ const AspiranteDocumentosPage = () => {
     aspiranteUser?.grupoInvestigacion?.trim() && aspiranteUser?.director?.trim(),
   )
   const hasFetchedRef = useRef(false)
+  const investigacionCardRef = useRef<HTMLElement>(null)
   const [items, setItems] = useState<DocumentUploadItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [grupoInvestigacionId, setGrupoInvestigacionId] = useState('')
@@ -450,6 +451,10 @@ const AspiranteDocumentosPage = () => {
   const investigacionListaParaAgregar =
     grupoInvestigacionId.trim().length > 0 && directorGrupoId.trim().length > 0
 
+  const handleIrAInformacionInvestigacion = () => {
+    investigacionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
   return (
     <section className="aspirante-documentos">
       <header className="aspirante-documentos__header">
@@ -469,6 +474,26 @@ const AspiranteDocumentosPage = () => {
         </div>
       </header>
 
+      {!infoInvestigacionAgregada ? (
+        <div className="aspirante-documentos__investigacion-alert" role="alert">
+          <span className="aspirante-documentos__investigacion-alert-icon" aria-hidden="true">!</span>
+          <div className="aspirante-documentos__investigacion-alert-content">
+            <strong>Falta seleccionar el director de trabajo de grado</strong>
+            <span>
+              Complete y guarde su grupo de investigación y director para finalizar su información.
+            </span>
+          </div>
+          <button
+            type="button"
+            className="aspirante-documentos__investigacion-alert-action"
+            onClick={handleIrAInformacionInvestigacion}
+          >
+            Seleccionar director
+            <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+      ) : null}
+
       <div className="aspirante-documentos__list">
         {errorMessage ? (
           <p className="aspirante-documentos__error aspirante-documentos__list-message">{errorMessage}</p>
@@ -487,7 +512,11 @@ const AspiranteDocumentosPage = () => {
         )}
       </div>
 
-      <section className="aspirante-documentos__investigacion-card" aria-label="Información de investigación">
+      <section
+        ref={investigacionCardRef}
+        className="aspirante-documentos__investigacion-card"
+        aria-label="Información de investigación"
+      >
         <h2 className="aspirante-documentos__investigacion-title">Información de investigación</h2>
         <p className="aspirante-documentos__investigacion-helper">
           Seleccione su grupo de investigación y el director del grupo.

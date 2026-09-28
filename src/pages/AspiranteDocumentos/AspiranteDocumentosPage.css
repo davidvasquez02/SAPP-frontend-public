@@ -43,6 +43,73 @@
     transition: width 0.3s ease;
 }
 
+.aspirante-documentos__investigacion-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid color-mix(in srgb, #d97706, transparent 55%);
+    border-radius: 18px;
+    background: color-mix(in srgb, #f59e0b, var(--surface) 88%);
+    color: var(--text-primary);
+    box-shadow: 0 8px 20px color-mix(in srgb, #92400e, transparent 88%);
+}
+
+.aspirante-documentos__investigacion-alert-icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #d97706;
+    color: #fff;
+    font-weight: 800;
+}
+
+.aspirante-documentos__investigacion-alert-content {
+    display: grid;
+    flex: 1;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.aspirante-documentos__investigacion-alert-content strong {
+    font-size: 0.95rem;
+}
+
+.aspirante-documentos__investigacion-alert-content span {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+
+.aspirante-documentos__investigacion-alert-action {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid color-mix(in srgb, #b45309, transparent 35%);
+    border-radius: 999px;
+    background: var(--surface);
+    color: #92400e;
+    padding: 0.6rem 0.9rem;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.aspirante-documentos__investigacion-alert-action:hover {
+    background: color-mix(in srgb, #f59e0b, var(--surface) 90%);
+    transform: translateY(-1px);
+}
+
+.aspirante-documentos__investigacion-alert-action:focus-visible {
+    outline: 3px solid color-mix(in srgb, #d97706, transparent 55%);
+    outline-offset: 2px;
+}
+
 .aspirante-documentos__list {
     display: grid;
     gap: 1rem;
@@ -75,6 +142,7 @@
     background: var(--surface);
     border: 1px solid color-mix(in srgb, var(--outline), transparent 20%);
     box-shadow: 0 10px 28px color-mix(in srgb, var(--outline), transparent 78%);
+    scroll-margin: 1.5rem;
 }
 
 .aspirante-documentos__investigacion-title {
@@ -163,6 +231,19 @@
 @media (min-width: 760px) {
     .aspirante-documentos__investigacion-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .aspirante-documentos__investigacion-alert {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .aspirante-documentos__investigacion-alert-action {
+        width: 100%;
+        justify-content: center;
+        margin-left: 2.9rem;
     }
 }
 

@@ -45,6 +45,18 @@ npm run dev
 npm run build
 ```
 
+## Despliegue y rutas SPA
+
+El contenedor incluye una regla explícita de fallback para las invitaciones
+`/evaluacion/{token}`. Estas URL deben llegar al contenedor del frontend: Nginx
+entrega `index.html` y React interpreta el token y el parámetro `accion`.
+
+Si existe un ingress, proxy reverso o gateway delante del contenedor, se debe
+enrutar `/evaluacion` y `/evaluacion/*` al servicio **frontend**. Solamente las
+rutas bajo `/api/sapp/*` deben dirigirse al backend. Enviar `/evaluacion/*` al
+backend produce una respuesta de recurso estático inexistente antes de que la
+aplicación React pueda iniciar.
+
 ## Variables de entorno
 
 Crear `.env` o `.env.local` en `SAPP-frontend-public/`:
@@ -66,6 +78,17 @@ VITE_DEV_PROXY_TARGET=http://localhost:8080
 ```
 
 El proxy de Vite reenvía `/api/sapp/*` al backend local. El cliente normaliza paths heredados como `/sapp/aspirante/consultaInfo` para evitar duplicar el prefijo.
+
+El portal de jurados usa la misma base configurada en `VITE_API_URL` que los
+demás servicios. Por lo tanto, abrir la ruta SPA `/evaluacion/{token}` consulta
+`/api/sapp/evaluacion/{token}`. Las operaciones `aceptar`, `declinar`, `documento`
+y `evaluacion` se agregan como sufijos de ese mismo recurso.
+
+La ruta del navegador y la del API tienen propósitos distintos: el proxy o
+ingress debe enviar `/evaluacion/*` al frontend y `/api/sapp/evaluacion/*` al
+backend. Si el backend responde `No static resource`, se debe verificar que el
+gateway esté retirando el prefijo `/api/sapp` de acuerdo con el despliegue del
+backend y que este exponga `GET /evaluacion/{token}`.
 
 `VITE_API_BASE_URL` se mantiene como fallback de compatibilidad para `.env` antiguos.
 
