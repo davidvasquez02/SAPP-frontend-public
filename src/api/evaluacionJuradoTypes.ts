@@ -46,6 +46,7 @@ export interface SesionEvaluadorDto {
   documentoId?: number | null
   documentoNombre?: string | null
   documentoDisponible: boolean
+  rubricaDisponible?: boolean
   fechaSustentacion?: string | null
   modalidadSustentacion?: string | null
   lugarSustentacion?: string | null
@@ -75,4 +76,9 @@ export interface RegistrarEvaluacionPayload {
   resultadoCodigo: string | null
   nota: number | null
   observaciones: string | null
+  rubricaContenidoBase64: string
+  rubricaMimeType: string
+  rubricaTamanoBytes: number
+  rubricaChecksum: string
+  rubricaNombreArchivo: string
 }
