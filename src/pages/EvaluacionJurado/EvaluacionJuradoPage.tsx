@@ -85,7 +85,7 @@ const copy = {
     selectionHelp: 'La opción seleccionada no se enviará hasta que presiones “Guardar evaluación”.', observations: 'Observaciones',
     required: 'obligatorio', save: 'Guardar evaluación', savedEvaluations: 'Evaluaciones registradas', gradePrefix: 'Nota',
     registeredOn: 'Registrada el', responseRegistered: 'Respuesta registrada', noActions: 'No tienes acciones pendientes en este momento.',
-    footer: 'Universidad Industrial de Santander · Sistema de Apoyo a Procesos de Posgrado',
+    footer: 'Universidad Industrial de Santander · Escuela de Ingeniería de Sistemas e Informática · Minerva - Sistema de Posgrados',
   },
   en: {
     notProvided: 'Not provided', registered: 'Recorded', documentConcept: 'Document assessment',
@@ -113,7 +113,7 @@ const copy = {
     selectionHelp: 'The selected option will not be submitted until you click “Save evaluation”.', observations: 'Observations',
     required: 'required', save: 'Save evaluation', savedEvaluations: 'Recorded evaluations', gradePrefix: 'Grade',
     registeredOn: 'Recorded on', responseRegistered: 'Response recorded', noActions: 'You have no pending actions at this time.',
-    footer: 'Industrial University of Santander · Graduate Process Support System',
+    footer: 'Industrial University of Santander · School of Systems and Informatics Engineering · Minerva - Graduate Studies System',
   },
 } as const
 
