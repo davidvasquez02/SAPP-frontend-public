@@ -11,12 +11,12 @@ import {
 } from '../../api/evaluacionJuradoService'
 import type { MomentoPendienteDto, SesionEvaluadorDto } from '../../api/evaluacionJuradoTypes'
 import { fileToBase64 } from '../../utils/fileToBase64'
+import { sha256Hex } from '../../utils/sha256'
 import './EvaluacionJuradoPage.css'
 
 interface Props { token: string }
 
 const CONCEPTO_DOCUMENTO = 'CONCEPTO_DOCUMENTO'
-const MAX_RUBRICA_BYTES = 15 * 1024 * 1024
 const CONCEPTOS_CON_OBSERVACION_OBLIGATORIA = new Set([
   'FAVORABLE_CON_OBSERVACIONES',
   'DESFAVORABLE',
@@ -78,14 +78,13 @@ const copy = {
     reasonPlaceholder: 'Puedes contarnos brevemente el motivo.', confirmParticipate: 'Confirmar que participaré',
     confirmNotParticipate: 'Confirmar que no participaré', cancel: 'Cancelar', pendingEvaluation: 'Evaluación pendiente',
     download: 'Descargar documento', downloadRubric: 'Descargar rúbrica de evaluación', downloadRubricFailed: 'No fue posible descargar la rúbrica de evaluación.',
-    rubricLabel: 'Rúbrica diligenciada', rubricHelp: 'Puedes adjuntar la rúbrica diligenciada en PDF (máximo 15 MB).',
-    rubricInvalidType: 'El archivo debe ser un PDF.', rubricEmpty: 'El PDF no puede estar vacío.',
-    rubricTooLarge: 'El PDF no puede superar los 15 MB.', removeRubric: 'Quitar rúbrica',
+    rubricLabel: 'Rúbrica diligenciada', rubricHelp: 'Sube la rúbrica de evaluación en PDF, ya diligenciada.',
+    rubricRequired: 'Debes adjuntar la rúbrica de evaluación diligenciada.', rubricInvalidType: 'El archivo debe ser un PDF.',
     defense: 'Sustentación:', openLink: 'Abrir enlace', moment: 'Momento', grade: 'Nota (0 a 5)',
     gradeHelp: 'Ingresa un valor entre 0 y 5, con máximo dos decimales.', concept: 'Concepto', result: 'Resultado',
     noOptions: 'No se recibieron las opciones de calificación. Actualiza la página o contacta al coordinador.',
-    selectionHelp: 'La opción seleccionada no se enviará hasta que presiones “{action}”.', observations: 'Observaciones',
-    required: 'obligatorio', issueConcept: 'Emitir concepto', sendEvaluation: 'Enviar evaluación', savedEvaluations: 'Evaluaciones registradas', gradePrefix: 'Nota',
+    selectionHelp: 'La opción seleccionada no se enviará hasta que presiones “Guardar evaluación”.', observations: 'Observaciones',
+    required: 'obligatorio', save: 'Guardar evaluación', savedEvaluations: 'Evaluaciones registradas', gradePrefix: 'Nota',
     registeredOn: 'Registrada el', responseRegistered: 'Respuesta registrada', noActions: 'No tienes acciones pendientes en este momento.',
     footer: 'Universidad Industrial de Santander · Escuela de Ingeniería de Sistemas e Informática · Minerva - Sistema de Posgrados',
   },
@@ -107,14 +106,13 @@ const copy = {
     reasonPlaceholder: 'You may briefly explain the reason.', confirmParticipate: 'Confirm my participation',
     confirmNotParticipate: 'Confirm that I cannot participate', cancel: 'Cancel', pendingEvaluation: 'Pending evaluation',
     download: 'Download document', downloadRubric: 'Download evaluation rubric', downloadRubricFailed: 'The evaluation rubric could not be downloaded.',
-    rubricLabel: 'Completed rubric', rubricHelp: 'You may attach the completed rubric as a PDF (maximum 15 MB).',
-    rubricInvalidType: 'The file must be a PDF.', rubricEmpty: 'The PDF must not be empty.',
-    rubricTooLarge: 'The PDF must not exceed 15 MB.', removeRubric: 'Remove rubric',
+    rubricLabel: 'Completed rubric', rubricHelp: 'Upload the evaluation rubric as a PDF, already filled in.',
+    rubricRequired: 'You must attach the completed evaluation rubric.', rubricInvalidType: 'The file must be a PDF.',
     defense: 'Thesis defense:', openLink: 'Open link', moment: 'Stage', grade: 'Grade (0 to 5)',
     gradeHelp: 'Enter a value from 0 to 5, with up to two decimal places.', concept: 'Assessment', result: 'Result',
     noOptions: 'No rating options were received. Refresh the page or contact the coordinator.',
-    selectionHelp: 'The selected option will not be submitted until you click “{action}”.', observations: 'Observations',
-    required: 'required', issueConcept: 'Issue assessment', sendEvaluation: 'Submit evaluation', savedEvaluations: 'Recorded evaluations', gradePrefix: 'Grade',
+    selectionHelp: 'The selected option will not be submitted until you click “Save evaluation”.', observations: 'Observations',
+    required: 'required', save: 'Save evaluation', savedEvaluations: 'Recorded evaluations', gradePrefix: 'Grade',
     registeredOn: 'Recorded on', responseRegistered: 'Response recorded', noActions: 'You have no pending actions at this time.',
     footer: 'Industrial University of Santander · School of Systems and Informatics Engineering · Minerva - Graduate Studies System',
   },
@@ -173,7 +171,6 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   const [nota, setNota] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [rubricaFile, setRubricaFile] = useState<File | null>(null)
-  const [rubricaError, setRubricaError] = useState<string | null>(null)
   const rubricaInputRef = useRef<HTMLInputElement>(null)
   const language = getLanguage(session)
   const t = copy[language]
@@ -236,31 +233,20 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
   const downloadRubricaDeEvaluacion = (evaluacionId: number) =>
     downloadFile(() => descargarRubricaDeEvaluacion(token, evaluacionId), t.downloadRubricFailed)
 
-  const resetRubrica = () => {
-    setRubricaFile(null)
-    setRubricaError(null)
-    if (rubricaInputRef.current) rubricaInputRef.current.value = ''
-  }
-
-  const validateRubrica = (file: File | null) => {
-    if (!file) return null
-    if (file.type !== 'application/pdf') return t.rubricInvalidType
-    if (file.size === 0) return t.rubricEmpty
-    if (file.size > MAX_RUBRICA_BYTES) return t.rubricTooLarge
-    return null
-  }
-
   const handleRubricaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null
-    setRubricaFile(file)
-    setRubricaError(validateRubrica(file))
+    if (file && file.type !== 'application/pdf') {
+      setEvaluationError(t.rubricInvalidType); event.target.value = ''; setRubricaFile(null)
+      return
+    }
+    setEvaluationError(null); setRubricaFile(file)
   }
 
   const submitEvaluation = (event: FormEvent) => {
     event.preventDefault()
     setEvaluationError(null)
     const pendingMoments = getMomentosPendientes(session)
-    const moment = pendingMoments.includes(selectedMoment) ? selectedMoment : pendingMoments[0] || ''
+    const moment = selectedMoment || pendingMoments[0] || ''
     if (!session?.puedeEvaluar || !moment || !pendingMoments.includes(moment)) {
       setEvaluationError(t.noPending)
       return
@@ -275,28 +261,26 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
     if (numeric && !isValidGrade(nota)) { setEvaluationError(t.invalidGrade); return }
     if (!numeric && options.length && !selection) { setEvaluationError(t.selectGrade); return }
     if (observacionesRequeridas && !observaciones.trim()) { setEvaluationError(t.observationsRequired); return }
-    const file = moment === CONCEPTO_DOCUMENTO ? rubricaFile : null
-    if (file) {
-      const fileError = validateRubrica(file)
-      setRubricaError(fileError)
-      if (fileError) return
-    }
+    if (!rubricaFile) { setEvaluationError(t.rubricRequired); return }
+    const file = rubricaFile
     void run(async () => {
-      const rubrica = file ? {
-        nombreArchivo: file.name,
-        mimeType: file.type,
-        tamanoBytes: file.size,
-        contenidoBase64: await fileToBase64(file),
-      } : undefined
+      const buffer = await file.arrayBuffer()
+      const rubricaContenidoBase64 = await fileToBase64(file)
+      const rubricaChecksum = await sha256Hex(buffer)
       const updated = await registrarEvaluacion(token, {
         momentoCodigo: moment,
         conceptoCodigo: moment === CONCEPTO_DOCUMENTO ? selection : null,
         resultadoCodigo: !numeric && moment === 'SUSTENTACION' ? selection : null,
         nota: numeric ? Number(nota.replace(',', '.')) : null,
         observaciones: observaciones.trim() || null,
-        ...(rubrica ? { rubrica } : {}),
+        rubricaContenidoBase64,
+        rubricaMimeType: file.type,
+        rubricaTamanoBytes: file.size,
+        rubricaChecksum,
+        rubricaNombreArchivo: file.name,
       })
-      resetRubrica()
+      setRubricaFile(null)
+      if (rubricaInputRef.current) rubricaInputRef.current.value = ''
       return updated
     }, t.saved)
   }
@@ -316,7 +300,6 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
     : getResultados(session, language)
   const observacionesRequeridas = activeMoment === CONCEPTO_DOCUMENTO
     && CONCEPTOS_CON_OBSERVACION_OBLIGATORIA.has(selection)
-  const submitLabel = activeMoment === CONCEPTO_DOCUMENTO ? t.issueConcept : t.sendEvaluation
   const usesConfirmableInvitationResponse = requestedAction === 'declinar'
 
   return <div className="evaluation-page">
@@ -339,18 +322,12 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
         </form>}
         {!usesConfirmableInvitationResponse && declining && <form className="evaluation-decline" onSubmit={(event) => { event.preventDefault(); void run(() => declinarInvitacion(token, motivo.trim() || undefined), t.declined) }}><label>{t.reason} <span>({t.optional})</span><textarea rows={3} value={motivo} onChange={(event) => setMotivo(event.target.value)} placeholder={t.reasonPlaceholder} /></label><div><button className="evaluation-button evaluation-button--danger" disabled={working}>{t.confirmNotParticipate}</button><button type="button" className="evaluation-link" onClick={() => setDeclining(false)}>{t.cancel}</button></div></form>}
       </section>}
-      {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">{t.pendingEvaluation}</p><h2>{momentoLabel(activeMoment, language)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>{t.download}</button>}{activeMoment === CONCEPTO_DOCUMENTO && session.rubricaDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void downloadRubrica()}>{t.downloadRubric}</button>}</div>
+      {canEvaluate && activeMoment && <section className="evaluation-card"><div className="evaluation-card__heading"><div><p className="evaluation-eyebrow">{t.pendingEvaluation}</p><h2>{momentoLabel(activeMoment, language)}</h2></div>{session.documentoDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void download()}>{t.download}</button>}{session.rubricaDisponible && <button className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void downloadRubrica()}>{t.downloadRubric}</button>}</div>
         {session.fechaSustentacion && <div className="evaluation-schedule"><strong>{t.defense}</strong> {formatDate(session.fechaSustentacion, language)} · {session.modalidadSustentacion}{session.lugarSustentacion ? ` · ${session.lugarSustentacion}` : ''}{session.enlaceSustentacion && <> · <a href={session.enlaceSustentacion} target="_blank" rel="noreferrer">{t.openLink}</a></>}</div>}
-        <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>{t.moment}<select value={activeMoment} disabled={working} onChange={(event) => { setSelectedMoment(event.target.value); setSelection(''); resetRubrica(); setEvaluationError(null); setError(null) }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item, language)}</option>)}</select></label>}
+        <form className="evaluation-form" onSubmit={submitEvaluation}>{pendingMoments.length > 1 && <label>{t.moment}<select value={activeMoment} onChange={(event) => { setSelectedMoment(event.target.value); setSelection('') }}>{pendingMoments.map((item) => <option key={item} value={item}>{momentoLabel(item, language)}</option>)}</select></label>}
           {numeric ? <label>{t.grade}<input type="text" inputMode="decimal" value={nota} onChange={(event) => { setNota(event.target.value); setEvaluationError(null) }} aria-describedby="evaluation-grade-help evaluation-form-error" required /><small id="evaluation-grade-help">{t.gradeHelp}</small></label> : options.length > 0 ? <fieldset className="evaluation-concepts" aria-describedby="evaluation-save-help"><legend>{activeMoment === CONCEPTO_DOCUMENTO ? t.concept : t.result}</legend>{options.map((item) => <label key={item.codigo} className={selection === item.codigo ? 'evaluation-concept evaluation-concept--selected' : 'evaluation-concept'}><input type="radio" name="concepto" value={item.codigo} checked={selection === item.codigo} onChange={(event) => { setSelection(event.target.value); setEvaluationError(null) }} required /><span><strong>{item.nombre}</strong>{item.descripcion && <small>{item.descripcion}</small>}</span></label>)}</fieldset> : <p className="evaluation-alert evaluation-alert--error">{t.noOptions}</p>}
-          {!numeric && options.length > 0 && <p id="evaluation-save-help" className="evaluation-form__help">{t.selectionHelp.replace('{action}', submitLabel)}</p>}
-          <label>{t.observations} <span>({observacionesRequeridas ? t.required : t.optional})</span><textarea rows={5} value={observaciones} onChange={(event) => { setObservaciones(event.target.value); setEvaluationError(null) }} required={observacionesRequeridas} /></label>
-          {activeMoment === CONCEPTO_DOCUMENTO && <>
-            <label>{t.rubricLabel} <span>({t.optional})</span><input ref={rubricaInputRef} type="file" accept="application/pdf,.pdf" disabled={working} onChange={handleRubricaChange} aria-invalid={!!rubricaError} aria-describedby={`evaluation-rubric-help${rubricaError ? ' evaluation-rubric-error' : ''}`} /><small id="evaluation-rubric-help">{t.rubricHelp}</small></label>
-            {rubricaFile && <button type="button" className="evaluation-link" disabled={working} onClick={resetRubrica}>{t.removeRubric}</button>}
-            {rubricaError && <div id="evaluation-rubric-error" className="evaluation-alert evaluation-alert--error" role="alert">{rubricaError}</div>}
-          </>}
-          {evaluationError && <div id="evaluation-form-error" className="evaluation-alert evaluation-alert--error" role="alert">{evaluationError}</div>}<button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>{submitLabel}</button></form>
+          {!numeric && options.length > 0 && <p id="evaluation-save-help" className="evaluation-form__help">{t.selectionHelp}</p>}
+          <label>{t.observations} <span>({observacionesRequeridas ? t.required : t.optional})</span><textarea rows={5} value={observaciones} onChange={(event) => { setObservaciones(event.target.value); setEvaluationError(null) }} required={observacionesRequeridas} /></label><label>{t.rubricLabel}<input ref={rubricaInputRef} type="file" accept="application/pdf,.pdf" onChange={handleRubricaChange} required /><small>{t.rubricHelp}</small></label>{evaluationError && <div id="evaluation-form-error" className="evaluation-alert evaluation-alert--error" role="alert">{evaluationError}</div>}<button type="submit" className="evaluation-button evaluation-button--primary" disabled={working || (!numeric && options.length === 0)}>{t.save}</button></form>
       </section>}
       {session.evaluaciones?.length > 0 && <section className="evaluation-card"><h2>{t.savedEvaluations}</h2><div className="evaluation-records">{session.evaluaciones.map((item, index) => {
         const momento = item.momentoCodigo ?? item.momento
