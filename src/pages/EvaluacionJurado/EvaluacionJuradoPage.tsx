@@ -4,6 +4,7 @@ import {
   aceptarInvitacion,
   declinarInvitacion,
   descargarDocumentoEvaluacion,
+  descargarRubricaDeEvaluacion,
   descargarRubricaEvaluacion,
   getSesionEvaluador,
   registrarEvaluacion,
@@ -229,6 +230,8 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
 
   const download = () => downloadFile(() => descargarDocumentoEvaluacion(token), t.downloadFailed)
   const downloadRubrica = () => downloadFile(() => descargarRubricaEvaluacion(token), t.downloadRubricFailed)
+  const downloadRubricaDeEvaluacion = (evaluacionId: number) =>
+    downloadFile(() => descargarRubricaDeEvaluacion(token, evaluacionId), t.downloadRubricFailed)
 
   const handleRubricaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null
@@ -335,6 +338,7 @@ const EvaluacionJuradoPage = ({ token }: Props) => {
           <span>{calificacion ? codigoLabel(calificacion) : item.nota != null ? `${t.gradePrefix}: ${item.nota}` : t.registered}</span>
           {item.observaciones && <p>{item.observaciones}</p>}
           {item.fechaRegistro && <time dateTime={item.fechaRegistro}>{t.registeredOn} {formatDate(item.fechaRegistro, language)}</time>}
+          {item.rubricaDisponible && item.id != null && <button type="button" className="evaluation-button evaluation-button--download" disabled={working} onClick={() => void downloadRubricaDeEvaluacion(item.id as number)}>{t.downloadRubric}</button>}
         </article>
       })}</div></section>}
       {!session.puedeResponderInvitacion && !canEvaluate && !session.evaluaciones?.length && <section className="evaluation-card evaluation-complete"><h2>{t.responseRegistered}</h2><p>{t.noActions}</p></section>}

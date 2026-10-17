@@ -17,6 +17,8 @@ export interface EvaluacionRegistradaDto {
   resultadoNombre?: string | null
   nota?: number | null
   observaciones?: string | null
+  rubricaDisponible?: boolean
+  rubricaNombreArchivo?: string | null
   fechaRegistro?: string | null
 }
 

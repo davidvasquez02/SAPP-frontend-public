@@ -35,6 +35,9 @@ export const descargarDocumentoEvaluacion = async (token: string) =>
 export const descargarRubricaEvaluacion = async (token: string) =>
   (await httpGet<ApiResponse<DocumentoEvaluacionDto>>(route(token, '/rubrica'), { auth: false })).data
 
+export const descargarRubricaDeEvaluacion = async (token: string, evaluacionId: number) =>
+  (await httpGet<ApiResponse<DocumentoEvaluacionDto>>(route(token, `/evaluaciones/${evaluacionId}/rubrica`), { auth: false })).data
+
 export const registrarEvaluacion = async (
   token: string,
   payload: RegistrarEvaluacionPayload,
