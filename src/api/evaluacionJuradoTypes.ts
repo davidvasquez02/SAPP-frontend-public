@@ -78,9 +78,5 @@ export interface RegistrarEvaluacionPayload {
   resultadoCodigo: string | null
   nota: number | null
   observaciones: string | null
-  rubricaContenidoBase64: string
-  rubricaMimeType: string
-  rubricaTamanoBytes: number
-  rubricaChecksum: string
-  rubricaNombreArchivo: string
+  rubrica?: DocumentoEvaluacionDto
 }
